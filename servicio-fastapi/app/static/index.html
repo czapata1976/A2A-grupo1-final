@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <title>Agentes A2A · Grupo 1</title>
-  <link rel="stylesheet" href="/static/styles.css?v=1.1.1">
+  <link rel="stylesheet" href="/static/styles.css?v=1.0.1">
 </head>
 <body>
   <div class="fondo" aria-hidden="true"></div>
@@ -87,66 +87,21 @@
         <p class="pie">LOCAL · sin URL pública<br>Grupo 1 · UAI Agentic AI<br><a href="/docs" target="_blank" rel="noopener">Documentación API</a></p>
       </aside>
 
-      <div class="columna-central">
-        <section class="panel-flujo" aria-labelledby="titulo-flujo">
-          <div class="flujo-cabecera">
-            <div>
-              <h2 id="titulo-flujo">Flujo A2A</h2>
-              <p class="flujo-subtitulo">Recorrido de la consulta por la red de agentes.</p>
-            </div>
-            <span id="flujo-estado" class="insignia" role="status" aria-live="polite">en espera</span>
+      <section class="panel-chat" aria-label="Conversación">
+        <div id="mensajes" class="mensajes" aria-live="polite">
+          <div class="mensaje mensaje-sistema">
+            <p>Escribe una consulta. Si participan varios agentes, la respuesta final conserva el texto íntegro de cada aporte.</p>
           </div>
-          <div class="flujo" id="flujo" aria-label="Diagrama del flujo A2A">
-            <div class="flujo-etapa" id="etapa-usuario">
-              <div class="flujo-nodo">
-                <span class="nodo-titulo">Usuario</span>
-                <span class="nodo-detalle" id="usuario-detalle">consulta</span>
-              </div>
-            </div>
-            <div class="flujo-flecha" aria-hidden="true"></div>
-            <div class="flujo-etapa" id="etapa-enrutador">
-              <div class="flujo-nodo">
-                <span class="nodo-titulo">Enrutador</span>
-                <span class="nodo-detalle" id="enrutador-detalle">elige agentes</span>
-              </div>
-            </div>
-            <div class="flujo-flecha" aria-hidden="true"></div>
-            <div class="flujo-etapa flujo-etapa-agentes">
-              <div id="flujo-agentes" class="flujo-agentes" role="list" aria-label="Agentes A2A"></div>
-            </div>
-            <div class="flujo-flecha" aria-hidden="true"></div>
-            <div class="flujo-etapa" id="etapa-sintesis">
-              <div class="flujo-nodo">
-                <span class="nodo-titulo">Síntesis</span>
-                <span class="nodo-detalle" id="sintesis-detalle">une aportes</span>
-              </div>
-            </div>
-            <div class="flujo-flecha" aria-hidden="true"></div>
-            <div class="flujo-etapa" id="etapa-respuesta">
-              <div class="flujo-nodo">
-                <span class="nodo-titulo">Respuesta</span>
-                <span class="nodo-detalle" id="respuesta-detalle">—</span>
-              </div>
-            </div>
-          </div>
-        </section>
+        </div>
 
-        <section class="panel-chat" aria-label="Conversación">
-          <div id="mensajes" class="mensajes" aria-live="polite">
-            <div class="mensaje mensaje-sistema">
-              <p>Escribe una consulta. Si participan varios agentes, la respuesta final conserva el texto íntegro de cada aporte.</p>
-            </div>
-          </div>
-
-          <form id="form-consulta" class="compositor">
-            <label class="sr-only" for="consulta">Consulta</label>
-            <textarea id="consulta" rows="2" maxlength="4000"
-                      placeholder="Ej.: ¿Cuánto vale AAPL en el mercado US?" required></textarea>
-            <button id="btn-enviar" type="submit" class="boton-primario">Enviar</button>
-          </form>
-          <p class="contador"><span id="contador">0</span>/4000 · Enter para enviar, Shift+Enter para salto de línea</p>
-        </section>
-      </div>
+        <form id="form-consulta" class="compositor">
+          <label class="sr-only" for="consulta">Consulta</label>
+          <textarea id="consulta" rows="2" maxlength="4000"
+                    placeholder="Ej.: ¿Cuánto vale AAPL en el mercado US?" required></textarea>
+          <button id="btn-enviar" type="submit" class="boton-primario">Enviar</button>
+        </form>
+        <p class="contador"><span id="contador">0</span>/4000 · Enter para enviar, Shift+Enter para salto de línea</p>
+      </section>
 
       <aside class="panel-traza" aria-label="Traza de la consulta">
         <div class="bloque-titulo">
@@ -171,6 +126,6 @@
     </section>
   </main>
 
-  <script src="/static/app.js?v=1.1.1" defer></script>
+  <script src="/static/app.js?v=1.0.1" defer></script>
 </body>
 </html>

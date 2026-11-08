@@ -2,15 +2,15 @@
 
 Agente de **Carlos Zapata**, grafo `agente_czz`, expuesto por **A2A de forma nativa** con el
 servidor de LangGraph (`langgraph dev --port 2025`). Proyecto derivado de `agente-viajes-a2a`:
-se conserva el nombre del paquete `src/agente_viajes/` (y la constante `SYSTEM_VIAJES`) para no
-romper los imports heredados, pero **el agente es otro**: análisis de acciones e inversiones.
+se conserva el nombre del paquete `src/agente_viajes/` por los imports heredados, pero **el agente
+es otro**: asesor experto en acciones (constante `SYSTEM_AGENTE`).
 
 ## Qué contiene
 
 | Pieza | Qué es |
 | --- | --- |
-| `src/agente_viajes/prompts.py` | Perfil: nombre, especialidad, personalidad, antecedentes, tres habilidades y límites (del blueprint). |
-| `src/agente_viajes/herramientas.py` | `consultar_mis_apuntes(tema)` y `consultar_acciones(ticker, pais)`. Deterministas, no llaman al modelo. |
+| `src/agente_viajes/prompts.py` | Perfil y **método de asesoría**: rol, personalidad, habilidades, formato de respuesta y límites. |
+| `src/agente_viajes/herramientas.py` | `consultar_mis_apuntes(tema)` y `consultar_acciones(ticker, pais)`. Deterministas; los precios en CLP se derivan de la moneda local con una tasa explícita. |
 | `src/agente_viajes/graph.py` | `create_agent(..., name="agente_czz")`. Sin checkpointer: lo exige el servidor. |
 | `langgraph.json` | Registra un solo grafo: `agente_czz`. |
 | `notebooks/a2a-test.ipynb` | Etapas 2 y 3 ejecutadas, con salidas guardadas. |

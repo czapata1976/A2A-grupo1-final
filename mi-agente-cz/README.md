@@ -5,15 +5,21 @@
 **Dónde corre:** `http://127.0.0.1:2025`.
 
 Este proyecto parte de `agente-viajes-a2a` (el agente de viajes de la clase) y lo transforma en un agente
-con el perfil de su autor: análisis de acciones e inversiones. Se conservan la carpeta `src/agente_viajes`
-y la variable `SYSTEM_VIAJES` para no romper los imports del proyecto original.
+con el perfil de su autor: **asesor experto en acciones**. Se conserva la carpeta `src/agente_viajes`
+por los imports heredados, pero el prompt ya es propio (`SYSTEM_AGENTE`), con método de análisis,
+formato de respuesta y límites explícitos.
+
+El agente trabaja con un método fijo: identifica ticker y mercado, obtiene los datos con
+`consultar_acciones`, los interpreta (rango de 52 semanas, variación, volumen), los contrasta con los
+criterios de `consultar_mis_apuntes` y entrega una decisión condicionada al perfil de riesgo, con
+riesgos y regla de salida. Nunca inventa fundamentales que la herramienta no devuelve.
 
 ## Blueprint · Agente `agente_czz`
 
 | Qué definir       | Mi agente                                                                                                                                                                                           |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Rol y alcance      | **Hace:** consulta el precio y los datos de mercado de una acción y busca antecedentes en sus apuntes. **No hace:** pagos, ejecución de inversiones, ni asesoría tributaria o legal. |
-| Herramientas       | `consultar_mis_apuntes(tema)` — mis conceptos, criterios y un caso. `consultar_acciones(ticker, pais)` — precio, mercado, variación y moneda local (datos simulados).                        |
+| Rol y alcance      | **Hace:** analiza acciones con datos de mercado y criterios fundamentales, compara alternativas y propone un plan de análisis. **No hace:** pagos, ejecución de inversiones, ni asesoría tributaria o legal. |
+| Herramientas       | `consultar_mis_apuntes(tema)` — mis conceptos, criterios y un caso. `consultar_acciones(ticker, pais)` — precio en moneda local y en CLP (con tasa explícita), variación, volumen, rango de 52 semanas y fecha de corte. Datos simulados y coherentes entre sí. |
 | Autonomía          | **Decide solo:** consultar acciones y mis apuntes sin aprobación previa. **Nunca sin una persona:** ejecutar pagos, compras, ventas o inversiones.                                        |
 | Cuándo pide ayuda  | **Pregunta si falta:** el país (el mercado donde cotiza) o el ticker. **Deriva a otro especialista cuando:** la consulta es tributaria o normativa.                                      |
 | Dónde se ejecuta   | `http://127.0.0.1:2025` · grafo `agente_czz`                                                                                                                                                   |

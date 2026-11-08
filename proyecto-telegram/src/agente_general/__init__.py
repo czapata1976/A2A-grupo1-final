@@ -1,1 +1,0 @@
-"""Agente general de demostración."""
