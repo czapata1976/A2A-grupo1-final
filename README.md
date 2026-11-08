@@ -6,7 +6,6 @@
 **Opción:** Servicio FastAPI protegido + consola web de chat + canal Telegram
 **Estado:** implementación local reproducible, suite automatizada aprobada y descubrimiento/manejo de error A2A verificados contra `langgraph dev`; las capturas del recorrido real con modelos quedan pendientes de ejecución con las claves del grupo.
 
-> **Proyecto Telegram:** [`proyecto-telegram/`](proyecto-telegram/README.md) es un proyecto independiente con CLI, FastAPI y agentes locales. La integración **A2A + Telegram** está en `servicio-fastapi/`.
 
 > Esta entrega continúa el **Taller A2A**. No reemplaza los agentes: los reutiliza. El detalle del
 > taller anterior se conserva como **Anexo** al final.
@@ -95,7 +94,6 @@ grupo-1-taller-a2a/
 │   ├── .env.example  requirements.txt  requirements-lock.txt  requirements-evidencias.txt
 │   ├── Dockerfile  Procfile
 │   └── README.md  SEGURIDAD.md
-├── proyecto-telegram/        ← proyecto independiente con CLI y agentes locales
 ├── mi-agente-cz/             ← agente_czz
 ├── agente-bryhan/            ← agente_bryhan
 ├── mi-agente-ale/            ← agente_alejandra
@@ -128,8 +126,7 @@ grupo-1-taller-a2a/
 
 `servicio-fastapi/` es un gateway protegido que descubre los agentes A2A del grupo, consulta uno o
 varios y devuelve una respuesta consolidada sin alterar cifras, unidades ni condiciones. Tiene dos
-puntos de entrada: la consola web y el webhook de Telegram. `proyecto-telegram/` es un proyecto
-independiente con agentes locales, CLI y API; no reemplaza la integración A2A.
+puntos de entrada: la consola web y el webhook de Telegram.
 
 ### 7.2 Ejecución local
 
@@ -230,30 +227,27 @@ Mensajes y comandos:
 
 Si `TELEGRAM_TOKEN` está vacío, el webhook responde `503`. Si el secreto no coincide, responde `403`.
 
+### 7.5.1 URLs públicas estables con túnel nombrado
+
+Los túneles rápidos (`trycloudflare.com`) cambian de URL en cada arranque y obligan a reescribir
+`A2A_SERVIDORES`. Con un dominio administrado en Cloudflare se usan hostnames fijos:
+
+```powershell
+cloudflared tunnel login                                        # una vez, autoriza en el navegador
+.\scripts\configurar_tunel_nombrado.ps1 -Dominio "a2a.midominio.cl"
+.\scripts\tunel_nombrado.ps1                                    # levanta el túnel
+```
+
+El script crea el túnel `a2a-grupo1`, enruta los subdominios `czz`, `bryhan`, `alejandra` y `cm`,
+escribe `cloudflared/config.yml` y deja el valor listo en `cloudflared/a2a-servidores.txt`. Ese
+valor se define una sola vez en Heroku y ya no cambia al reiniciar el PC. El túnel sigue apuntando
+a los puertos locales 2025-2028, así que el PC debe estar encendido para que responda.
+
 ### 7.6 Desplegar en Heroku
 
-La opción más simple para un solo dyno es `proyecto-telegram/`, porque ejecuta los agentes en el
-mismo proceso:
-
-```powershell
-heroku login
-heroku create a2a-grupo1-final
-heroku git:remote -a a2a-grupo1-final
-heroku config:set GOOGLE_API_KEY=... ANTHROPIC_API_KEY=... MODELO=gemini-3.5-flash-lite MODELO_ANTHROPIC=claude-sonnet-5-5 TELEGRAM_TOKEN=... TELEGRAM_SECRET=... AGENTE_PREDETERMINADO=agente_general
-git subtree push --prefix proyecto-telegram heroku main
-heroku open
-```
-
-Después registra el webhook con la URL de Heroku:
-
-```powershell
-cd proyecto-telegram
-.venv\Scripts\python.exe scripts\set_webhook.py --url "https://tu-app.herokuapp.com"
-```
-
-Para desplegar el gateway A2A (`servicio-fastapi/`), los servidores A2A deben ser alcanzables
-públicamente; `127.0.0.1` no funciona desde Heroku. Si ya los tienes expuestos con HTTPS y
-autenticación:
+El único componente que se despliega es el gateway (`servicio-fastapi/`), que también sirve el canal
+de Telegram. Los servidores A2A deben ser alcanzables públicamente; `127.0.0.1` no funciona desde
+Heroku. Si ya los tienes expuestos con HTTPS y autenticación:
 
 ```powershell
 heroku create a2a-grupo1-gateway
@@ -263,8 +257,8 @@ git subtree push --prefix servicio-fastapi heroku main
 heroku open
 ```
 
-No publiques `langgraph dev` sin autenticación. Para la entrega local, usa el primer proyecto o
-mantén el gateway en local con el túnel de Telegram.
+No publiques `langgraph dev` sin autenticación: cualquiera podría consultar tus agentes. En local,
+mantén el gateway con `API_KEYS` y los túneles bajo tu control.
 
 #### Despliegue del gateway desde la raíz del monorepo (integración GitHub)
 

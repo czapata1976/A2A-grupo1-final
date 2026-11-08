@@ -43,3 +43,10 @@ Thumbs.db
 # Túnel de Cloudflare: la URL es temporal
 tunel.url
 tunel.pid
+
+# Túnel nombrado: credenciales, logs y estado local
+cloudflared/*.json
+cloudflared/cert.pem
+cloudflared/*.log
+cloudflared/*.log.err
+cloudflared/tunel.pid
