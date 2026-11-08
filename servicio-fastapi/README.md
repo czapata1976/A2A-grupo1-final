@@ -462,7 +462,8 @@ heroku open
 
 - `Procfile` y `.python-version` (3.12) ya están en `servicio-fastapi/`.
 - `A2A_SERVIDORES` debe contener URLs públicas alcanzables desde Heroku; `127.0.0.1` no sirve en la
-  nube. Con el túnel nombrado de Cloudflare las URLs son hostnames fijos del dominio del grupo.
+  nube. Los túneles rápidos de Cloudflare cambian de URL al reiniciar, así que hay que actualizar
+  la variable cuando se reabren.
 
 - `PORT` es configurable (`Dockerfile` y `Procfile` lo respetan).
 - `API_KEYS`, `A2A_SERVIDORES`, `DOCS_HABILITADOS`, `CORS_ORIGINS` y los límites salen del entorno.

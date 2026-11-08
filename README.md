@@ -227,22 +227,6 @@ Mensajes y comandos:
 
 Si `TELEGRAM_TOKEN` está vacío, el webhook responde `503`. Si el secreto no coincide, responde `403`.
 
-### 7.5.1 URLs públicas estables con túnel nombrado
-
-Los túneles rápidos (`trycloudflare.com`) cambian de URL en cada arranque y obligan a reescribir
-`A2A_SERVIDORES`. Con un dominio administrado en Cloudflare se usan hostnames fijos:
-
-```powershell
-cloudflared tunnel login                                        # una vez, autoriza en el navegador
-.\scripts\configurar_tunel_nombrado.ps1 -Dominio "a2a.midominio.cl"
-.\scripts\tunel_nombrado.ps1                                    # levanta el túnel
-```
-
-El script crea el túnel `a2a-grupo1`, enruta los subdominios `czz`, `bryhan`, `alejandra` y `cm`,
-escribe `cloudflared/config.yml` y deja el valor listo en `cloudflared/a2a-servidores.txt`. Ese
-valor se define una sola vez en Heroku y ya no cambia al reiniciar el PC. El túnel sigue apuntando
-a los puertos locales 2025-2028, así que el PC debe estar encendido para que responda.
-
 ### 7.6 Desplegar en Heroku
 
 El único componente que se despliega es el gateway (`servicio-fastapi/`), que también sirve el canal
