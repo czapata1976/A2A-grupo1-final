@@ -32,6 +32,17 @@ const el = {
   trazaAgentes: document.getElementById("traza-agentes"),
   trazaAportes: document.getElementById("traza-aportes"),
   trazaPasos: document.getElementById("traza-pasos"),
+  flujo: document.getElementById("flujo"),
+  flujoEstado: document.getElementById("flujo-estado"),
+  flujoAgentes: document.getElementById("flujo-agentes"),
+  etapaUsuario: document.getElementById("etapa-usuario"),
+  etapaEnrutador: document.getElementById("etapa-enrutador"),
+  etapaSintesis: document.getElementById("etapa-sintesis"),
+  etapaRespuesta: document.getElementById("etapa-respuesta"),
+  usuarioDetalle: document.getElementById("usuario-detalle"),
+  enrutadorDetalle: document.getElementById("enrutador-detalle"),
+  sintesisDetalle: document.getElementById("sintesis-detalle"),
+  respuestaDetalle: document.getElementById("respuesta-detalle"),
 };
 
 const estado = {
@@ -42,6 +53,15 @@ const estado = {
   sessionId: "",
   enviando: false,
   conectado: false,
+  flujoId: 0,
+  flujoConResultado: false,
+};
+
+const ETIQUETAS_MODO = {
+  auto: "automático",
+  individual: "individual",
+  paralelo: "paralelo",
+  colaborativo: "colaborativo",
 };
 
 function crearSesionId() {
@@ -211,6 +231,7 @@ async function conectar(clave, opciones = {}) {
 
 function renderAgentes() {
   el.listaAgentes.replaceChildren();
+  renderFlujoAgentes();
   if (estado.agentes.length === 0) {
     const aviso = document.createElement("p");
     aviso.className = "ayuda";
@@ -246,6 +267,225 @@ function actualizarSeleccion() {
     boton.setAttribute("aria-pressed", seleccionado ? "true" : "false");
   }
   actualizarAyudaModo();
+  actualizarFlujoSeleccion();
+}
+
+function nombreVisible(agente) {
+  return agente.autor || agente.grafo;
+}
+
+function esperar(ms) {
+  return new Promise((resolver) => {
+    setTimeout(resolver, ms);
+  });
+}
+
+function renderFlujoAgentes() {
+  el.flujoAgentes.replaceChildren();
+  if (estado.agentes.length === 0) {
+    const aviso = document.createElement("p");
+    aviso.className = "flujo-vacio";
+    aviso.textContent = "Sin agentes descubiertos.";
+    el.flujoAgentes.appendChild(aviso);
+    return;
+  }
+  for (const agente of estado.agentes) {
+    const nodo = document.createElement("div");
+    nodo.className = "flujo-agente pendiente";
+    nodo.dataset.grafo = agente.grafo;
+    nodo.setAttribute("role", "listitem");
+    nodo.title = agente.descripcion || agente.especialidad || agente.grafo;
+
+    const nombre = document.createElement("span");
+    nombre.className = "fa-nombre";
+    nombre.textContent = nombreVisible(agente);
+
+    const detalle = document.createElement("span");
+    detalle.className = "fa-estado";
+    detalle.textContent = "disponible";
+
+    nodo.append(nombre, detalle);
+    el.flujoAgentes.appendChild(nodo);
+  }
+}
+
+function nodoFlujo(grafo) {
+  return el.flujoAgentes.querySelector(`.flujo-agente[data-grafo="${CSS.escape(grafo)}"]`);
+}
+
+function flecha(indice, activa) {
+  const flechas = el.flujo.querySelectorAll(".flujo-flecha");
+  const elemento = flechas[indice];
+  if (elemento) {
+    elemento.classList.toggle("activa", Boolean(activa));
+  }
+}
+
+function marcarEtapa(nodo, clase) {
+  if (!nodo) {
+    return;
+  }
+  nodo.classList.remove("activo", "ok", "error");
+  if (clase) {
+    nodo.classList.add(clase);
+  }
+}
+
+function reiniciarFlujo() {
+  estado.flujoId += 1;
+  estado.flujoConResultado = false;
+  for (const etapa of el.flujo.querySelectorAll(".flujo-etapa")) {
+    etapa.classList.remove("activo", "ok", "error");
+  }
+  for (const lambda of el.flujo.querySelectorAll(".flujo-flecha")) {
+    lambda.classList.remove("activa");
+  }
+  for (const nodo of el.flujoAgentes.querySelectorAll(".flujo-agente")) {
+    nodo.className = "flujo-agente pendiente";
+    const detalle = nodo.querySelector(".fa-estado");
+    if (detalle) {
+      detalle.textContent = "disponible";
+    }
+  }
+  el.flujoEstado.className = "insignia";
+  el.flujoEstado.textContent = "en espera";
+  el.usuarioDetalle.textContent = "consulta";
+  el.enrutadorDetalle.textContent = "elige agentes";
+  el.sintesisDetalle.textContent = "une aportes";
+  el.respuestaDetalle.textContent = "—";
+}
+
+function actualizarFlujoSeleccion() {
+  if (estado.enviando || estado.flujoConResultado) {
+    return;
+  }
+  const total = estado.seleccion.size;
+  el.enrutadorDetalle.textContent = total
+    ? `${total} seleccionado${total === 1 ? "" : "s"}`
+    : "elige agentes";
+  for (const nodo of el.flujoAgentes.querySelectorAll(".flujo-agente")) {
+    const elegido = estado.seleccion.has(nodo.dataset.grafo);
+    nodo.classList.toggle("elegido", elegido);
+    nodo.classList.toggle("pendiente", !elegido);
+  }
+}
+
+function iniciarFlujoEnvio(cuerpo) {
+  reiniciarFlujo();
+  const id = estado.flujoId;
+  el.flujoEstado.className = "insignia activo";
+  el.flujoEstado.textContent = "consultando";
+  el.usuarioDetalle.textContent = "consulta enviada";
+  marcarEtapa(el.etapaUsuario, "activo");
+
+  const elegidos = Array.isArray(cuerpo.agentes) && cuerpo.agentes.length
+    ? cuerpo.agentes
+    : Array.from(estado.seleccion);
+  for (const grafo of elegidos) {
+    const nodo = nodoFlujo(grafo);
+    if (!nodo) {
+      continue;
+    }
+    nodo.className = "flujo-agente activo";
+    const detalle = nodo.querySelector(".fa-estado");
+    if (detalle) {
+      detalle.textContent = "en curso";
+    }
+  }
+
+  setTimeout(() => {
+    if (id !== estado.flujoId) {
+      return;
+    }
+    marcarEtapa(el.etapaUsuario, "ok");
+    marcarEtapa(el.etapaEnrutador, "activo");
+    flecha(0, true);
+    el.enrutadorDetalle.textContent = ETIQUETAS_MODO[cuerpo.modo] || cuerpo.modo;
+  }, 220);
+
+  setTimeout(() => {
+    if (id !== estado.flujoId) {
+      return;
+    }
+    marcarEtapa(el.etapaEnrutador, "ok");
+    flecha(1, true);
+  }, 520);
+}
+
+async function animarResultadoFlujo(datos) {
+  const id = estado.flujoId;
+  estado.flujoConResultado = true;
+  const consultados = Array.isArray(datos.agentes_consultados) ? datos.agentes_consultados : [];
+  const aportes = Array.isArray(datos.aportes) ? datos.aportes : [];
+  const porAgente = new Map(aportes.map((aporte) => [aporte.agente, aporte]));
+
+  for (const nodo of el.flujoAgentes.querySelectorAll(".flujo-agente")) {
+    const grafo = nodo.dataset.grafo;
+    const detalle = nodo.querySelector(".fa-estado");
+    const aporte = porAgente.get(grafo);
+    if (aporte) {
+      const correcto = aporte.estado === "ok";
+      nodo.className = `flujo-agente ${correcto ? "ok" : "error"}`;
+      if (detalle) {
+        detalle.textContent = correcto
+          ? `ok · ${aporte.duracion_ms || 0} ms`
+          : aporte.codigo_error || "error";
+      }
+    } else if (consultados.includes(grafo)) {
+      nodo.className = "flujo-agente activo";
+      if (detalle) {
+        detalle.textContent = "en curso";
+      }
+    } else {
+      nodo.className = "flujo-agente omitido";
+      if (detalle) {
+        detalle.textContent = "no usado";
+      }
+    }
+  }
+
+  marcarEtapa(el.etapaUsuario, "ok");
+  marcarEtapa(el.etapaEnrutador, "ok");
+  flecha(0, true);
+  flecha(1, true);
+
+  marcarEtapa(el.etapaSintesis, "activo");
+  flecha(2, true);
+  el.sintesisDetalle.textContent = `${consultados.length} aporte${consultados.length === 1 ? "" : "s"}`;
+  await esperar(180);
+  if (id !== estado.flujoId) {
+    return;
+  }
+  marcarEtapa(el.etapaSintesis, "ok");
+
+  marcarEtapa(el.etapaRespuesta, "activo");
+  flecha(3, true);
+  el.respuestaDetalle.textContent = datos.estado || "—";
+  await esperar(160);
+  if (id !== estado.flujoId) {
+    return;
+  }
+  marcarEtapa(el.etapaRespuesta, datos.estado === "error" ? "error" : "ok");
+
+  const clase = datos.estado === "ok" ? "ok" : datos.estado === "parcial" ? "parcial" : "error";
+  el.flujoEstado.className = `insignia ${clase}`;
+  el.flujoEstado.textContent = datos.estado || "—";
+}
+
+function marcarFlujoError(error) {
+  estado.flujoConResultado = true;
+  marcarEtapa(el.etapaEnrutador, "error");
+  for (const nodo of el.flujoAgentes.querySelectorAll(".flujo-agente.activo")) {
+    nodo.className = "flujo-agente error";
+    const detalle = nodo.querySelector(".fa-estado");
+    if (detalle) {
+      detalle.textContent = "sin respuesta";
+    }
+  }
+  marcarEtapa(el.etapaRespuesta, "error");
+  el.respuestaDetalle.textContent = "sin respuesta";
+  el.flujoEstado.className = "insignia error";
+  el.flujoEstado.textContent = error && error.status ? `error ${error.status}` : "error";
 }
 
 function actualizarAyudaModo() {
@@ -521,6 +761,7 @@ async function enviarConsulta(evento) {
   el.consulta.value = "";
   actualizarContador();
   const cargando = agregarCargando();
+  iniciarFlujoEnvio(cuerpo);
 
   try {
     const datos = await api("/v1/consultas", { method: "POST", body: cuerpo });
@@ -532,9 +773,11 @@ async function enviarConsulta(evento) {
     }
     agregarRespuesta(datos);
     renderTraza(datos);
+    animarResultadoFlujo(datos);
   } catch (error) {
     cargando.remove();
     manejarErrorConsulta(error);
+    marcarFlujoError(error);
   } finally {
     estado.enviando = false;
     el.btnEnviar.disabled = false;
@@ -557,6 +800,7 @@ function nuevaConversacion() {
   el.mensajes.replaceChildren();
   agregarSistema("Nueva conversación. La memoria A2A anterior quedó cerrada.");
   ocultarTraza();
+  reiniciarFlujo();
   el.consulta.focus();
 }
 
@@ -638,6 +882,7 @@ function inicializar() {
   actualizarSesion();
   actualizarContador();
   actualizarAyudaModo();
+  renderFlujoAgentes();
   comprobarSalud();
 
   const claveGuardada = sessionStorage.getItem(CLAVE_STORAGE);
