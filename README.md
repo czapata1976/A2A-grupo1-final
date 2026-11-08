@@ -291,8 +291,21 @@ Pasos en el dashboard:
 | `A2A_SERVIDORES` | URLs **públicas** de los agentes, separadas por coma. `127.0.0.1` no es alcanzable desde Heroku. |
 | `CONFIAR_EN_PROXY` | `true` (Heroku añade `X-Forwarded-For`). |
 | `DOCS_HABILITADOS` | `false` para no exponer `/docs` públicamente. |
+| `A2A_TIMEOUT` | `25`: el router de Heroku corta la petición a los 30 s, así que conviene responder con un error propio antes. |
 | `AUDIT_LOG` | Vacío: el filesystem del dyno es efímero y se pierde en cada reinicio. |
 | `TELEGRAM_TOKEN` / `TELEGRAM_SECRET` | Solo si se activa el canal de Telegram. |
+
+Para los agentes locales, `servicio-fastapi/scripts/tuneles_agentes.ps1` abre un túnel de Cloudflare
+por puerto, valida `/ok` y escribe `logs/tuneles.json` con el mapa puerto → URL:
+
+```powershell
+cd servicio-fastapi
+.\scripts\tuneles_agentes.ps1              # imprime el valor de A2A_SERVIDORES
+.\scripts\tuneles_agentes.ps1 -Detener     # cierra todos los túneles
+```
+
+Las URLs `trycloudflare.com` son temporales: si se reinician los túneles hay que actualizar
+`A2A_SERVIDORES` en Heroku.
 
 Verificación tras el despliegue: `GET https://<app>.herokuapp.com/salud` debe responder `200` y
 `/v1/agentes` debe listar los agentes descubiertos por túnel.
