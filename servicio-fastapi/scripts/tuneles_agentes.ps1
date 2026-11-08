@@ -29,17 +29,19 @@ if ($Detener) {
             try {
                 Stop-Process -Id ([int]$linea) -Force -ErrorAction Stop
                 Write-Host "Túnel detenido (PID $linea)."
-            } catch {
+            }
+            catch {
                 Write-Host "El proceso $linea ya no estaba corriendo."
             }
         }
         Remove-Item -LiteralPath $archivoPids -Force
-    } else {
+    }
+    else {
         Write-Host "No hay túneles registrados."
     }
     Remove-Item -LiteralPath $archivoJson -Force -ErrorAction SilentlyContinue
     Get-ChildItem -LiteralPath $carpetaLogs -Filter "tunel-*.log" -ErrorAction SilentlyContinue |
-        Remove-Item -Force -ErrorAction SilentlyContinue
+    Remove-Item -Force -ErrorAction SilentlyContinue
     return
 }
 
@@ -56,7 +58,8 @@ foreach ($puerto in $Puertos) {
     $activo = $false
     try {
         $activo = (Invoke-WebRequest -Uri "http://127.0.0.1:$puerto/ok" -TimeoutSec 3 -UseBasicParsing).StatusCode -eq 200
-    } catch {
+    }
+    catch {
         $activo = $false
     }
     if (-not $activo) {
@@ -91,7 +94,8 @@ foreach ($puerto in $Puertos) {
 
     if (-not $url) {
         Write-Warning "No se pudo leer la URL pública del puerto $puerto. Revisa $logErr"
-    } else {
+    }
+    else {
         Write-Host "  $puerto -> $url" -ForegroundColor Green
         $urls["$puerto"] = $url
     }
