@@ -426,11 +426,15 @@ async function animarResultadoFlujo(datos) {
     if (aporte) {
       const correcto = aporte.estado === "ok";
       nodo.className = `flujo-agente ${correcto ? "ok" : "error"}`;
+      const textoEstado = correcto
+        ? `ok · ${aporte.duracion_ms || 0} ms`
+        : aporte.codigo_error || "error";
       if (detalle) {
-        detalle.textContent = correcto
-          ? `ok · ${aporte.duracion_ms || 0} ms`
-          : aporte.codigo_error || "error";
+        detalle.textContent = textoEstado;
       }
+      nodo.title = aporte.error
+        ? `${grafo} · ${textoEstado}: ${aporte.error}`
+        : `${grafo} · ${textoEstado}`;
     } else if (consultados.includes(grafo)) {
       nodo.className = "flujo-agente activo";
       if (detalle) {
@@ -441,6 +445,7 @@ async function animarResultadoFlujo(datos) {
       if (detalle) {
         detalle.textContent = "no usado";
       }
+      nodo.title = `${grafo} · no consultado en esta ejecución`;
     }
   }
 
