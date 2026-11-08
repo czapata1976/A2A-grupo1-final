@@ -1,0 +1,23 @@
+meta {
+  name: 0-assistant-id
+  type: http
+  seq: 0
+}
+
+post {
+  url: {{base_url}}/assistants/search
+  body: json
+  auth: none
+}
+
+body:json {
+  { "graph_id": "{{graph}}" }
+}
+
+assert {
+  res.status: eq 200
+}
+
+script:post-response {
+  bru.setEnvVar("assistant", res.body[0].assistant_id);
+}

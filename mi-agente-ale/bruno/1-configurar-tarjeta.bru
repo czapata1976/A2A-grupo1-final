@@ -1,0 +1,23 @@
+meta {
+  name: 1-configurar-tarjeta
+  type: http
+  seq: 1
+}
+
+patch {
+  url: {{base_url}}/assistants/{{assistant}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "agente_alejandra",
+    "description": "Agente de Alejandra Ubilla: auditoría de cumplimiento normativo y tributario (CMF y SII) de empresas y fondos de inversión. Revisa declaraciones, sanciones y ratios, y propone el siguiente paso de auditoría. No presenta declaraciones ni ejecuta acciones correctivas."
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.name: eq agente_alejandra
+}

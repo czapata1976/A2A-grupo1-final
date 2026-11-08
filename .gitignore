@@ -1,0 +1,45 @@
+# Credenciales y configuración local
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Entornos virtuales
+.venv/
+venv-notebook/
+
+# Estado y cachés de Python / notebooks / pruebas
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ipynb_checkpoints/
+.coverage
+htmlcov/
+
+# Estado local de LangGraph y logs
+.langgraph_api/
+.langgraph_ap
+logs/
+*.log
+cloudflared*.log
+
+# Datos locales y temporales
+*.db
+*.sqlite
+*.sqlite3
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Configuración local de editores / herramientas
+.opencode/
+.idea/
+.vscode/
+
+# Túnel de Cloudflare: la URL es temporal
+tunel.url
+tunel.pid

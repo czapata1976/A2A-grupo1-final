@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Agentes A2A · Grupo 1</title>
+  <link rel="stylesheet" href="/static/styles.css?v=1.0.1">
+</head>
+<body>
+  <div class="fondo" aria-hidden="true"></div>
+
+  <header class="cabecera">
+    <div class="marca">
+      <div class="logo" aria-hidden="true">A2A</div>
+      <div>
+        <h1>Agentes A2A · Grupo 1</h1>
+        <p>FastAPI protegido + LangGraph · consola local</p>
+      </div>
+    </div>
+    <div class="estado">
+      <span id="estado-punto" class="punto punto-espera" aria-hidden="true"></span>
+      <span id="estado-texto">Comprobando servicio…</span>
+      <button id="btn-config" class="boton-fantasma" type="button">Clave API</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="panel-acceso" class="panel-acceso" aria-labelledby="titulo-acceso">
+      <div class="tarjeta-acceso">
+        <span class="etiqueta">Acceso protegido</span>
+        <h2 id="titulo-acceso">Conecta la consola</h2>
+        <p class="texto-suave">
+          Ingresa la clave del servicio. Se guarda solo en esta pestaña y viaja en la cabecera
+          <code>X-API-Key</code>; nunca se incluye en el repositorio.
+        </p>
+        <form id="form-acceso">
+          <label for="clave">Clave API</label>
+          <div class="campo-clave">
+            <input id="clave" type="password" autocomplete="current-password" spellcheck="false"
+                   placeholder="Mínimo 12 caracteres" required>
+            <button id="btn-ver" type="button" class="boton-icono" aria-label="Mostrar clave">Ver</button>
+          </div>
+          <button id="btn-conectar" type="submit" class="boton-primario">Conectar</button>
+          <p id="error-acceso" class="mensaje-error" role="alert" hidden></p>
+        </form>
+        <p class="nota">
+          La clave del modelo y las claves de los agentes viven en sus <code>.env</code> y no pasan por el navegador.
+        </p>
+      </div>
+    </section>
+
+    <section id="app" class="app" hidden>
+      <aside class="panel-lateral" aria-label="Configuración de la consulta">
+        <div class="bloque">
+          <div class="bloque-titulo">
+            <h2>Agentes</h2>
+            <button id="btn-automatico" class="boton-mini" type="button">Automático</button>
+          </div>
+          <p class="ayuda">Elige uno para una respuesta directa o varios para sumar aportes A2A.</p>
+          <div id="lista-agentes" class="lista-agentes"></div>
+        </div>
+
+        <div class="bloque">
+          <label for="modo">Modo de consulta</label>
+          <select id="modo">
+            <option value="auto">Automático (un agente)</option>
+            <option value="individual">Individual (un agente)</option>
+            <option value="paralelo">Paralelo (varios a la vez)</option>
+            <option value="colaborativo">Colaborativo (aportes en cadena)</option>
+          </select>
+          <p class="ayuda" id="ayuda-modo">El servicio elige al especialista según tu consulta.</p>
+        </div>
+
+        <div class="bloque">
+          <button id="btn-nueva" class="boton-secundario" type="button">Nueva conversación</button>
+          <p class="sesion">Sesión: <span id="sesion-id">—</span></p>
+        </div>
+
+        <div class="bloque">
+          <h2>Ejemplos</h2>
+          <button class="ejemplo" type="button" data-ejemplo="accion">Precio de una acción</button>
+          <button class="ejemplo" type="button" data-ejemplo="multiaente">Consulta multiaente</button>
+          <button class="ejemplo" type="button" data-ejemplo="faltante">Dato faltante</button>
+        </div>
+
+        <p class="pie">LOCAL · sin URL pública<br>Grupo 1 · UAI Agentic AI<br><a href="/docs" target="_blank" rel="noopener">Documentación API</a></p>
+      </aside>
+
+      <section class="panel-chat" aria-label="Conversación">
+        <div id="mensajes" class="mensajes" aria-live="polite">
+          <div class="mensaje mensaje-sistema">
+            <p>Escribe una consulta. Si participan varios agentes, la respuesta final conserva el texto íntegro de cada aporte.</p>
+          </div>
+        </div>
+
+        <form id="form-consulta" class="compositor">
+          <label class="sr-only" for="consulta">Consulta</label>
+          <textarea id="consulta" rows="2" maxlength="4000"
+                    placeholder="Ej.: ¿Cuánto vale AAPL en el mercado US?" required></textarea>
+          <button id="btn-enviar" type="submit" class="boton-primario">Enviar</button>
+        </form>
+        <p class="contador"><span id="contador">0</span>/4000 · Enter para enviar, Shift+Enter para salto de línea</p>
+      </section>
+
+      <aside class="panel-traza" aria-label="Traza de la consulta">
+        <div class="bloque-titulo">
+          <h2>Traza de la última consulta</h2>
+        </div>
+        <div id="traza-vacia" class="traza-vacia">
+          <p>Aquí verás el estado, los agentes consultados, sus tiempos y los aportes A2A.</p>
+        </div>
+        <div id="traza" class="traza" hidden>
+          <div class="traza-resumen">
+            <div><span class="dato">Solicitud</span><code id="traza-solicitud">—</code></div>
+            <div><span class="dato">Estado</span><span id="traza-estado" class="insignia">—</span></div>
+            <div><span class="dato">Agentes</span><span id="traza-agentes">—</span></div>
+          </div>
+          <div id="traza-aportes" class="traza-aportes"></div>
+          <details class="traza-detalle">
+            <summary>Pasos de ejecución</summary>
+            <ol id="traza-pasos"></ol>
+          </details>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script src="/static/app.js?v=1.0.1" defer></script>
+</body>
+</html>

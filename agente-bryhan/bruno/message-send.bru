@@ -1,0 +1,40 @@
+meta {
+  name: message-send
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/a2a/{{assistant}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "message/send",
+    "params": {
+      "message": {
+        "role": "user",
+        "messageId": "m1",
+        "contextId": "6f1c2a3e-0b7d-4c1e-9a55-2b8f0c1d7e90",
+        "parts": [{ "kind": "text", "text": "Quiero un vuelo de Santiago a Lima el 2026-11-10 y un hotel por 2 noches" }]
+      }
+    }
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.result.status.state: eq completed
+}
+
+tests {
+  test("el agente respondió con datos", function() {
+    const r = res.getBody().result;
+    const texto = JSON.stringify(r);
+    expect(texto.length).to.be.greaterThan(50);
+  });
+}

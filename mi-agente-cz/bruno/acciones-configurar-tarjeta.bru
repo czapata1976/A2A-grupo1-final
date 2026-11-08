@@ -1,0 +1,23 @@
+meta {
+  name: acciones-configurar-tarjeta
+  type: http
+  seq: 1
+}
+
+patch {
+  url: {{base_url}}/assistants/{{assistant}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Agente de acciones",
+    "description": "Consulta el precio y los datos de una acción (AAPL, MSFT, SQM-B, FALABELLA) y busca antecedentes en su base de conocimiento. No ejecuta pagos ni inversiones."
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.name: eq Agente de acciones
+}

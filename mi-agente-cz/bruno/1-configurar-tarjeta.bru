@@ -1,0 +1,23 @@
+meta {
+  name: 1-configurar-tarjeta
+  type: http
+  seq: 1
+}
+
+patch {
+  url: {{base_url}}/assistants/{{assistant}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "agente_czz",
+    "description": "Agente de Carlos Zapata: análisis de acciones e inversiones. Consulta precios y datos de mercado por ticker y país, y busca antecedentes en sus apuntes. No ejecuta pagos ni decisiones de inversión; deriva lo tributario y lo legal."
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.name: eq agente_czz
+}

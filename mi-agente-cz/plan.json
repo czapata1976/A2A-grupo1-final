@@ -1,0 +1,131 @@
+{
+    "proyecto": "Taller A2A · Grupo 1 · agente_czz (Carlos Zapata)",
+    "grupos": {
+        "etapa-1-diseno": "Blueprint del agente, perfil en prompts.py, herramientas propias y grafo registrado como agente_czz.",
+        "etapa-2-conexion": "Servidor langgraph dev en el puerto 2025: tarjeta A2A, message/send y memoria por contextId.",
+        "etapa-3-conversacion": "Dos agentes del grupo conversando: el supervisor descubre las tarjetas y elige quién responde cada turno."
+    },
+    "tareas": [
+        {
+            "id": "e01",
+            "grupo": "etapa-1-diseno",
+            "nombre": "Blueprint y perfil del agente",
+            "estado": "hecho",
+            "depende_de": [],
+            "entregables": [
+                "blueprint.md",
+                "src/agente_viajes/prompts.py"
+            ],
+            "verificacion": [
+                "prompts.py define NOMBRE, ESPECIALIDAD, PERSONALIDAD, SOBRE_MI y tres SKILLS",
+                "SYSTEM_VIAJES incluye los límites del blueprint: sin pagos ni ejecución de inversiones, deriva lo tributario y lo legal"
+            ],
+            "evidencia": "src/agente_viajes/prompts.py: NOMBRE='Carlos Zapata', ESPECIALIDAD='análisis de acciones e inversiones' y tres habilidades; el prompt cierra con 'Alcance y límites (del blueprint)'."
+        },
+        {
+            "id": "e02",
+            "grupo": "etapa-1-diseno",
+            "nombre": "Herramientas consultar_mis_apuntes y consultar_acciones",
+            "estado": "hecho",
+            "depende_de": [],
+            "entregables": [
+                "src/agente_viajes/herramientas.py"
+            ],
+            "verificacion": [
+                "python -c \"from src.agente_viajes.herramientas import consultar_acciones; print(consultar_acciones.invoke({'ticker':'AAPL','pais':'US'}))\" devuelve precio y variación",
+                "consultar_acciones sin país devuelve un texto que pide el mercado"
+            ],
+            "evidencia": "AAPL/US devuelve precio_local 342.1 USD, precio 331250 CLP y var_pct 1.24; sin país responde 'No puedo consultar AAPL sin saber el país (mercado)'."
+        },
+        {
+            "id": "e03",
+            "grupo": "etapa-1-diseno",
+            "nombre": "Grafo agente_czz registrado en langgraph.json",
+            "estado": "hecho",
+            "depende_de": [
+                "e01",
+                "e02"
+            ],
+            "entregables": [
+                "src/agente_viajes/graph.py",
+                "langgraph.json"
+            ],
+            "verificacion": [
+                "langgraph.json registra un único grafo: agente_czz -> ./src/agente_viajes/graph.py:graph"
+            ],
+            "evidencia": "create_agent(..., name='agente_czz') sin checkpointer; langgraph.json con 'agente_czz': './src/agente_viajes/graph.py:graph'."
+        },
+        {
+            "id": "e04",
+            "grupo": "etapa-2-conexion",
+            "nombre": "Servidor en el puerto 2025 con tarjeta A2A",
+            "estado": "hecho",
+            "depende_de": [
+                "e03"
+            ],
+            "entregables": [
+                "bruno/0-assistant-id.bru",
+                "bruno/agent-card.bru",
+                "tests/test_a2a_viajes.py"
+            ],
+            "verificacion": [
+                "GET /ok responde 200",
+                "POST /assistants/search {'graph_id':'agente_czz'} devuelve el assistant_id",
+                "GET /.well-known/agent-card.json?assistant_id=<uuid> anuncia name=agente_czz y POST /a2a/<uuid>"
+            ],
+            "evidencia": "langgraph dev --port 2025 respondió /ok; assistant_id=3d58b072-566f-59e7-90f2-8fb84b2a11fe; la tarjeta anuncia name=agente_czz y url=http://127.0.0.1:2025/a2a/3d58b072-566f-59e7-90f2-8fb84b2a11fe."
+        },
+        {
+            "id": "e05",
+            "grupo": "etapa-2-conexion",
+            "nombre": "Notebook con personalidad, skills, memoria y envío A2A",
+            "estado": "hecho",
+            "depende_de": [
+                "e04"
+            ],
+            "entregables": [
+                "notebooks/a2a-test.ipynb"
+            ],
+            "verificacion": [
+                "El notebook corre de arriba abajo con el servidor del 2025 levantado",
+                "message/send devuelve status.state = completed y el artefacto trae la respuesta"
+            ],
+            "evidencia": "Cuatro verificaciones con salida guardada: presentación con nombre y especialidad; apuntes + plan de análisis; memoria con el mismo thread_id; message/send completed con AAPL a 342,10 USD y su variación."
+        },
+        {
+            "id": "e06",
+            "grupo": "etapa-3-conversacion",
+            "nombre": "Supervisor A2A entre agente_czz y agente_bryhan",
+            "estado": "hecho",
+            "depende_de": [
+                "e05"
+            ],
+            "entregables": [
+                "notebooks/a2a-test.ipynb"
+            ],
+            "verificacion": [
+                "Se descubren las tarjetas de 2025 y 2026 y se escribe en cada una su descripción (PATCH /assistants/<uuid>)",
+                "Cada agente tiene su propio contextId",
+                "Tres turnos sobre el reto 'evaluar si conviene invertir': czz -> bryhan -> czz"
+            ],
+            "evidencia": "Agentes descubiertos: agente_czz (Carlos Zapata) y agente_bryhan (Bryhan Cortes), cada uno con url /a2a/<uuid>. El supervisor eligió czz, bryhan y czz en los tres turnos; el turno 3 reutiliza el contextId del turno 1."
+        },
+        {
+            "id": "e07",
+            "grupo": "etapa-3-conversacion",
+            "nombre": "Ajustes de protocolo y de entorno documentados",
+            "estado": "hecho",
+            "depende_de": [
+                "e06"
+            ],
+            "entregables": [
+                "README.md",
+                "notebooks/a2a-test.ipynb"
+            ],
+            "verificacion": [
+                "README.md documenta el conflicto de OpenTelemetry y la fijación de protocolVersion 0.3.0"
+            ],
+            "evidencia": "notas del README y del notebook: kernel separado para a2a-sdk, interfaz.protocol_version='0.3.0' antes de create_client y contextId nuevo en cada sesión."
+        }
+    ]
+}

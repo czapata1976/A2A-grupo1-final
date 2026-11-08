@@ -1,0 +1,141 @@
+{
+  "proyecto": "agente-viajes-a2a",
+  "grupos": {
+    "viajes": "Agente de viajes expuesto por A2A nativo (servidor de LangGraph). HECHO.",
+    "agente-conversacional": "Agente conversacional que consume al de viajes por A2A. SIN TAREAS AÚN: las crea @spec con el pedido del README.",
+    "swarm": "Agregar el agente de actividades al swarm vuelos+hoteles. PENDIENTE."
+  },
+  "tareas": [
+    {
+      "id": "v01",
+      "grupo": "viajes",
+      "nombre": "Herramientas buscar_vuelos y buscar_hoteles con datos simulados",
+      "estado": "hecho",
+      "depende_de": [],
+      "entregables": [
+        "src/agente_viajes/herramientas.py"
+      ],
+      "verificacion": [
+        "python -c 'from src.agente_viajes.herramientas import buscar_vuelos; print(buscar_vuelos.invoke({\"origen\":\"SCL\",\"destino\":\"LIM\",\"fecha\":\"2026-11-10\"}))' devuelve 2 vuelos"
+      ],
+      "evidencia": "2 vuelos SCL→LIM (LATAM, SKY)"
+    },
+    {
+      "id": "v02",
+      "grupo": "viajes",
+      "nombre": "Grafo ReAct con MessagesState y prompt separado",
+      "estado": "hecho",
+      "depende_de": [
+        "v01"
+      ],
+      "entregables": [
+        "src/agente_viajes/graph.py",
+        "src/agente_viajes/prompts.py"
+      ],
+      "verificacion": [
+        "langgraph dev levanta el grafo agente_viajes sin errores"
+      ],
+      "evidencia": "langgraph dev · Registering graph with id 'agente_viajes'"
+    },
+    {
+      "id": "v03",
+      "grupo": "viajes",
+      "nombre": "Exposición A2A nativa: tarjeta y message/send",
+      "estado": "hecho",
+      "depende_de": [
+        "v02"
+      ],
+      "entregables": [
+        "langgraph.json",
+        "bruno/agent-card.bru",
+        "bruno/message-send.bru"
+      ],
+      "verificacion": [
+        "POST /assistants/search {\"graph_id\":\"agente_viajes\"} devuelve el assistant_id",
+        "GET /.well-known/agent-card.json?assistant_id=<uuid> responde 200 con skills",
+        "POST /a2a/<uuid> message/send con contextId UUID devuelve result.status.state = completed; un segundo mensaje con el mismo contextId recuerda el primero"
+      ],
+      "evidencia": "Configurado para curl, Bruno y pytest contra http://127.0.0.1:2025 (langgraph-api 0.15.1)"
+    },
+    {
+      "id": "s01",
+      "grupo": "swarm",
+      "nombre": "Herramienta buscar_actividades con datos simulados",
+      "estado": "pendiente",
+      "depende_de": [],
+      "descripcion": "src/agente_viajes/herramientas.py: @tool buscar_actividades(ciudad: str, tipo: str = 'todas') con 3 actividades por ciudad (LIM, BOG, EZE) y precio CLP. No tocar las herramientas existentes.",
+      "entregables": [
+        "src/agente_viajes/herramientas.py"
+      ],
+      "verificacion": [
+        "buscar_actividades.invoke({'ciudad':'LIM'}) devuelve 3 actividades"
+      ]
+    },
+    {
+      "id": "s02",
+      "grupo": "swarm",
+      "nombre": "Prompt y agente de actividades",
+      "estado": "pendiente",
+      "depende_de": [
+        "s01"
+      ],
+      "descripcion": "src/swarm/prompts.py: SYSTEM_ACTIVIDADES (tours, museos, gastronomía; transfiere a vuelos u hoteles si no es suyo). src/swarm/graph.py: a_actividades = create_handoff_tool(agent_name='actividades', ...); actividades = create_react_agent(modelo, tools=[buscar_actividades, a_vuelos, a_hoteles], prompt=SYSTEM_ACTIVIDADES, name='actividades').",
+      "entregables": [
+        "src/swarm/prompts.py",
+        "src/swarm/graph.py"
+      ],
+      "verificacion": [
+        "El grafo compila con 3 agentes"
+      ]
+    },
+    {
+      "id": "s03",
+      "grupo": "swarm",
+      "nombre": "Cablear los handoffs hacia actividades",
+      "estado": "pendiente",
+      "depende_de": [
+        "s02"
+      ],
+      "descripcion": "Agregar a_actividades a las tools de vuelos y de hoteles, y actividades a la lista de create_swarm. Mantener default_active_agent='vuelos'.",
+      "entregables": [
+        "src/swarm/graph.py"
+      ],
+      "verificacion": [
+        "Con thread_id fijo: '¿qué puedo hacer en Lima?' deja active_agent='actividades'; luego 'y un hotel' deja active_agent='hoteles'"
+      ]
+    },
+    {
+      "id": "s04",
+      "grupo": "swarm",
+      "nombre": "Tests del swarm",
+      "estado": "pendiente",
+      "depende_de": [
+        "s03"
+      ],
+      "descripcion": "tests/test_swarm.py: tres turnos en un mismo thread que recorren vuelos → actividades → hoteles, verificando active_agent en cada paso y que la respuesta final mencione un hotel.",
+      "entregables": [
+        "tests/test_swarm.py"
+      ],
+      "verificacion": [
+        "pytest tests/test_swarm.py pasa"
+      ]
+    },
+    {
+      "id": "s05",
+      "grupo": "swarm",
+      "nombre": "Exponer el swarm por A2A",
+      "estado": "pendiente",
+      "depende_de": [
+        "s03"
+      ],
+      "descripcion": "Registrar src/swarm/graph.py:graph en langgraph.json como 'swarm_viajes'. Como el estado tiene messages, queda expuesto por A2A sin más código.",
+      "entregables": [
+        "langgraph.json"
+      ],
+      "verificacion": [
+        "POST /assistants/search {\"graph_id\":\"swarm_viajes\"} devuelve un assistant y su tarjeta responde 200",
+        "message/send al swarm con 'hotel en Bogotá 2 noches' devuelve completed"
+      ]
+    }
+  ]
+}

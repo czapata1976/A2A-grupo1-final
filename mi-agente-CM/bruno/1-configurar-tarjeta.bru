@@ -1,0 +1,23 @@
+meta {
+  name: 1-configurar-tarjeta
+  type: http
+  seq: 1
+}
+
+patch {
+  url: {{base_url}}/assistants/{{assistant}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "agente_soluciones_comerciales_marketing",
+    "description": "Agente de Carlos Monroy: ingeniería comercial y marketing. Analiza necesidades, verifica antecedentes documentales, compara alternativas y propone soluciones comerciales. No inventa datos ni experiencia, y pide autorización antes de publicar o comprometer nada."
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.name: eq agente_soluciones_comerciales_marketing
+}

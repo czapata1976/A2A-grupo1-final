@@ -1,0 +1,112 @@
+{
+    "proyecto": "Taller A2A · Grupo 1 · agente_soluciones_comerciales_marketing (Carlos Monroy)",
+    "grupos": {
+        "etapa-1-diseno": "Blueprint, perfil de ingeniería comercial y marketing, herramienta de apuntes y grafo registrado.",
+        "etapa-2-conexion": "Servidor langgraph dev en el puerto 2025: tarjeta A2A, message/send y memoria por contextId.",
+        "etapa-3-conversacion": "Supervisor A2A que descubre las tarjetas del grupo y elige con quién conversar cada turno."
+    },
+    "tareas": [
+        {
+            "id": "c01",
+            "grupo": "etapa-1-diseno",
+            "nombre": "Blueprint y perfil del agente",
+            "estado": "hecho",
+            "depende_de": [],
+            "entregables": [
+                "blueprint.md",
+                "src/agente_viajes/prompts.py"
+            ],
+            "verificacion": [
+                "prompts.py define NOMBRE, ESPECIALIDAD, PERSONALIDAD, SOBRE_MI y SKILLS",
+                "SYSTEM_VIAJES incluye los límites del blueprint: responder solo lo consultado, no inventar y pedir autorización antes de actuar"
+            ],
+            "evidencia": "src/agente_viajes/prompts.py con identidad, especialidad 'ingeniería comercial y marketing' y cinco habilidades; las instrucciones fijan 'no inventes experiencias, credenciales ni datos' y 'solicita autorización antes de enviar mensajes o asumir compromisos'."
+        },
+        {
+            "id": "c02",
+            "grupo": "etapa-1-diseno",
+            "nombre": "Herramienta consultar_mis_apuntes",
+            "estado": "hecho",
+            "depende_de": [],
+            "entregables": [
+                "src/agente_viajes/herramientas.py"
+            ],
+            "verificacion": [
+                "consultar_mis_apuntes.invoke({}) devuelve conceptos, criterios y caso",
+                "consultar_mis_apuntes.invoke({'tema':'caso'}) devuelve el caso con la advertencia de que es ficticio"
+            ],
+            "evidencia": "herramientas.py define APUNTES con conceptos, criterios y un caso ficticio de marketing inmobiliario; los temas desconocidos devuelven 'No tengo ese tema registrado'."
+        },
+        {
+            "id": "c03",
+            "grupo": "etapa-1-diseno",
+            "nombre": "Grafo registrado en langgraph.json",
+            "estado": "hecho",
+            "depende_de": [
+                "c01",
+                "c02"
+            ],
+            "entregables": [
+                "src/agente_viajes/graph.py",
+                "langgraph.json"
+            ],
+            "verificacion": [
+                "langgraph.json registra un único grafo: agente_soluciones_comerciales_marketing -> ./src/agente_viajes/graph.py:graph"
+            ],
+            "evidencia": "create_agent(..., name='agente_soluciones_comerciales_marketing') sin checkpointer; langgraph.json con esa única entrada."
+        },
+        {
+            "id": "c04",
+            "grupo": "etapa-2-conexion",
+            "nombre": "Servidor en el puerto 2025 con tarjeta A2A",
+            "estado": "hecho",
+            "depende_de": [
+                "c03"
+            ],
+            "entregables": [
+                "bruno/0-assistant-id.bru",
+                "bruno/agent-card.bru",
+                "tests/test_a2a_viajes.py"
+            ],
+            "verificacion": [
+                "POST /assistants/search {'graph_id':'agente_soluciones_comerciales_marketing'} devuelve el assistant_id",
+                "GET /.well-known/agent-card.json?assistant_id=<uuid> anuncia name y url /a2a/<uuid>"
+            ],
+            "evidencia": "notebook_runtime.asegurar_servidor() levanta langgraph dev en el 2025 y espera /ok; la colección Bruno y el test apuntan a ese puerto con el grafo propio."
+        },
+        {
+            "id": "c05",
+            "grupo": "etapa-2-conexion",
+            "nombre": "Notebook con personalidad, skills, memoria y envío A2A",
+            "estado": "hecho",
+            "depende_de": [
+                "c04"
+            ],
+            "entregables": [
+                "notebooks/a2a-test.ipynb"
+            ],
+            "verificacion": [
+                "El notebook corre de arriba abajo con el servidor del 2025 levantado",
+                "message/send devuelve status.state = completed"
+            ],
+            "evidencia": "notebooks/a2a-test.ipynb: personalidad, consulta a los apuntes con el caso, memoria en un mismo thread_id, tarjeta A2A y celda de envío message/send."
+        },
+        {
+            "id": "c06",
+            "grupo": "etapa-3-conversacion",
+            "nombre": "Supervisor A2A entre los dos agentes del grupo",
+            "estado": "hecho",
+            "depende_de": [
+                "c05"
+            ],
+            "entregables": [
+                "notebooks/a2a-test.ipynb"
+            ],
+            "verificacion": [
+                "Descubre las tarjetas de los servidores 2025 y 2026 y escribe la ficha de cada agente",
+                "El supervisor elige un agente por turno y la conversación tiene tres turnos sobre el reto del taller"
+            ],
+            "evidencia": "El notebook descubre asistentes con langgraph_sdk, fija protocolVersion 0.3.0, asigna un contextId por agente y usa un supervisor con structured output para elegir quién responde."
+        }
+    ]
+}

@@ -1,0 +1,11 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.langgraph_api/
+.ipynb_checkpoints/
+
+# túnel de Cloudflare: la URL es temporal y no debe versionarse
+tunel.url
+tunel.pid
+cloudflared*.log

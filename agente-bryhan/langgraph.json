@@ -1,0 +1,9 @@
+{
+  "dependencies": [
+    "."
+  ],
+  "graphs": {
+    "agente_bryhan": "./src/agente_bryhan/graph.py:graph"
+  },
+  "env": ".env"
+}

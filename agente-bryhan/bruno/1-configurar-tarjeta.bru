@@ -1,0 +1,23 @@
+meta {
+  name: 1-configurar-tarjeta
+  type: http
+  seq: 1
+}
+
+patch {
+  url: {{base_url}}/assistants/{{assistant}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Agente de viajes",
+    "description": "Busca vuelos y hoteles (SCL, LIM, BOG, EZE) con precios en CLP. No gestiona pagos ni seguros."
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.name: eq Agente de viajes
+}

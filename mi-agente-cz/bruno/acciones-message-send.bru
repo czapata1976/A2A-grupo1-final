@@ -1,0 +1,39 @@
+meta {
+  name: acciones-message-send
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/a2a/{{assistant}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "message/send",
+    "params": {
+      "message": {
+        "role": "user",
+        "messageId": "m1",
+        "contextId": "8b2f4d10-6a3c-4f8e-b1d2-7c9e0a5f3b64",
+        "parts": [{ "kind": "text", "text": "Cuanto vale AAPL en el mercado US?" }]
+      }
+    }
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.result.status.state: eq completed
+}
+
+tests {
+  test("respondió con datos de la acción", function() {
+    const texto = JSON.stringify(res.getBody().result);
+    expect(texto).to.contain("AAPL");
+  });
+}

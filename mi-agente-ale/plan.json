@@ -1,0 +1,112 @@
+{
+    "proyecto": "Taller A2A · Grupo 1 · agente_alejandra (Alejandra Ubilla)",
+    "grupos": {
+        "etapa-1-diseno": "Blueprint, perfil de auditoría, herramientas SII/CMF/fondos y grafo registrado como agente_alejandra.",
+        "etapa-2-conexion": "Servidor langgraph dev en el puerto 2025: tarjeta A2A, message/send y memoria por contextId.",
+        "etapa-3-conversacion": "Dos perfiles conversando: agente_alejandra (2025) y agente_benjamin (2026)."
+    },
+    "tareas": [
+        {
+            "id": "a01",
+            "grupo": "etapa-1-diseno",
+            "nombre": "Blueprint y perfil de la auditora",
+            "estado": "hecho",
+            "depende_de": [],
+            "entregables": [
+                "README.md",
+                "src/agente_viajes/prompts.py"
+            ],
+            "verificacion": [
+                "prompts.py define NOMBRE, ESPECIALIDAD, PERSONALIDAD, SOBRE_MI y tres SKILLS",
+                "El prompt exige usar herramientas y prohíbe inventar datos del SII, CMF, ratios o montos"
+            ],
+            "evidencia": "src/agente_viajes/prompts.py: NOMBRE='Alejandra', ESPECIALIDAD='auditoría de cumplimiento normativo y tributario (CMF y SII)' y tres habilidades; el prompt fija 'nunca inventes datos del SII, de la CMF, ratios ni montos'."
+        },
+        {
+            "id": "a02",
+            "grupo": "etapa-1-diseno",
+            "nombre": "Herramientas de auditoría de empresas y fondos",
+            "estado": "hecho",
+            "depende_de": [],
+            "entregables": [
+                "src/agente_viajes/herramientas.py"
+            ],
+            "verificacion": [
+                "HERRAMIENTAS incluye consultar_mis_apuntes, consultar_sii, consultar_cmf, verificar_cumplimiento_contable, generar_checklist_cumplimiento_empresa, consultar_fondo, revisar_cumplimiento_normativo, calcular_ratios_fondo y generar_checklist_auditoria",
+                "revisar_cumplimiento_normativo('FM Inmobiliario') marca cumple=False por 35% sobre el límite de 20%"
+            ],
+            "evidencia": "herramientas.py con datos simulados: tres empresas con RUT, tres fondos y el límite NCG 365 (20%); 'FM Inmobiliario' tiene mayor_emisor_pct=35.0."
+        },
+        {
+            "id": "a03",
+            "grupo": "etapa-1-diseno",
+            "nombre": "Grafo agente_alejandra registrado en langgraph.json",
+            "estado": "hecho",
+            "depende_de": [
+                "a01",
+                "a02"
+            ],
+            "entregables": [
+                "src/agente_viajes/graph.py",
+                "langgraph.json"
+            ],
+            "verificacion": [
+                "langgraph.json registra un único grafo: agente_alejandra -> ./src/agente_viajes/graph.py:graph"
+            ],
+            "evidencia": "create_agent(..., name='agente_alejandra') con ChatAnthropic (claude-sonnet-5-5) y sin checkpointer; langgraph.json con el grafo agente_alejandra."
+        },
+        {
+            "id": "a04",
+            "grupo": "etapa-2-conexion",
+            "nombre": "Servidor en el puerto 2025 con tarjeta A2A",
+            "estado": "hecho",
+            "depende_de": [
+                "a03"
+            ],
+            "entregables": [
+                "bruno/0-assistant-id.bru",
+                "bruno/agent-card.bru",
+                "tests/test_a2a_viajes.py"
+            ],
+            "verificacion": [
+                "POST /assistants/search {'graph_id':'agente_alejandra'} devuelve el assistant_id",
+                "GET /.well-known/agent-card.json?assistant_id=<uuid> anuncia name=agente_alejandra"
+            ],
+            "evidencia": "Servidor levantado en el puerto 2025 y tarjeta con name=agente_alejandra y url /a2a/<uuid>; colección Bruno y test_a2a_viajes.py apuntando a ese puerto."
+        },
+        {
+            "id": "a05",
+            "grupo": "etapa-2-conexion",
+            "nombre": "Notebook con personalidad, conocimientos, memoria y A2A",
+            "estado": "hecho",
+            "depende_de": [
+                "a04"
+            ],
+            "entregables": [
+                "notebooks/a2a-test.ipynb"
+            ],
+            "verificacion": [
+                "El notebook corre de arriba abajo con el servidor del 2025 levantado y guarda sus salidas",
+                "message/send devuelve status.state = completed"
+            ],
+            "evidencia": "Salidas guardadas: presentación con nombre y especialidad, uso de consultar_mis_apuntes con el caso, memoria en el mismo thread_id y descarga de la tarjeta. La celda 'Verificación 4' hace el message/send (se ejecuta con el servidor del 2025 arriba)."
+        },
+        {
+            "id": "a06",
+            "grupo": "etapa-3-conversacion",
+            "nombre": "Conversación de tres turnos entre Alejandra y Benjamín",
+            "estado": "hecho",
+            "depende_de": [
+                "a05"
+            ],
+            "entregables": [
+                "notebooks/a2a-test.ipynb"
+            ],
+            "verificacion": [
+                "Descubre los asistentes de 2025 y 2026 y prepara un cliente A2A por agente",
+                "Los tres turnos resuelven el caso de Comercial Andina Ltda y el último integra ambos aportes"
+            ],
+            "evidencia": "Turno A: diagnóstico SII/CMF; turno B: matriz de riesgo, contención y segregación de funciones; turno final: plan de 4 fases con responsables y plazos."
+        }
+    ]
+}

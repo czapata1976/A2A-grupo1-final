@@ -1,0 +1,7 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "agente_soluciones_comerciales_marketing": "./src/agente_viajes/graph.py:graph"
+  },
+  "env": ".env"
+}

@@ -1,0 +1,17 @@
+meta {
+  name: agent-card
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/.well-known/agent-card.json?assistant_id={{assistant}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.name: eq {{graph}}
+  res.body.skills: isDefined
+}

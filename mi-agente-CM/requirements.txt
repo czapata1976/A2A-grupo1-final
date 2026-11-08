@@ -1,0 +1,16 @@
+# runtime del agente (familia LangChain 1.x)
+langchain>=1.3,<2
+langchain-core>=1.6,<2
+langgraph>=1.2,<2
+langchain-google-genai>=4.3,<5
+pydantic>=2.7,<3
+python-dotenv>=1.0
+httpx>=0.27
+# servidor local de LangGraph (expone A2A en /a2a/{assistant_id})
+langgraph-cli[inmem]>=0.4
+langgraph-api>=0.15.1
+# Windows: el logger de langgraph-api (structlog) exige colorama para el render con color
+colorama>=0.4; sys_platform == "win32"
+# pruebas
+# (las dependencias del notebook, incluidas a2a-sdk y langgraph-sdk, están en requirements-notebook.txt)
+pytest>=8

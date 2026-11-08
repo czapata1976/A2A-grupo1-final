@@ -1,0 +1,12 @@
+# Kernel del notebook (etapas 2 y 3). NO instalar en el entorno del servidor:
+# `a2a-sdk` sube google-api-core / OpenTelemetry y langgraph-api deja de arrancar.
+a2a-sdk>=1.2
+langgraph-sdk>=0.4
+langgraph>=1.2,<2
+langchain-core>=1.6,<2
+langchain-google-genai>=4.3,<5
+pydantic>=2.7,<3
+protobuf>=5
+httpx>=0.27
+python-dotenv>=1.0
+ipykernel>=6
