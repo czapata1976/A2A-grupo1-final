@@ -266,6 +266,40 @@ heroku open
 No publiques `langgraph dev` sin autenticación. Para la entrega local, usa el primer proyecto o
 mantén el gateway en local con el túnel de Telegram.
 
+#### Despliegue del gateway desde la raíz del monorepo (integración GitHub)
+
+La integración de GitHub de Heroku construye la **raíz del repositorio**, no una subcarpeta, y el
+dashboard no permite cambiar el stack. Por eso la raíz incluye tres archivos de despliegue y **no**
+se usa `heroku.yml` (el build manifest exige el stack `container`):
+
+| Archivo | Contenido | Motivo |
+| --- | --- | --- |
+| `Procfile` | `uvicorn app.main:crear_app --factory --app-dir servicio-fastapi` | `--app-dir` añade `servicio-fastapi` al `sys.path` sin fijar `PYTHONPATH`. |
+| `requirements.txt` | `-r servicio-fastapi/requirements.txt` | Una sola fuente de dependencias. |
+| `.python-version` | `3.12` | Evita que el buildpack elija una versión mayor no probada. |
+
+Pasos en el dashboard:
+
+1. **New → Create new app**, nombre `a2a-grupo1-final`, región a elección.
+2. **Deploy → Deployment method → GitHub**, autoriza y elige el repositorio y la rama `main`.
+3. **Enable Automatic Deploys** y luego **Deploy Branch**.
+4. **Settings → Config Vars → Reveal Config Vars** y define:
+
+| Variable | Valor |
+| --- | --- |
+| `API_KEYS` | Clave propia de 12+ caracteres ASCII (las de ejemplo se rechazan). |
+| `A2A_SERVIDORES` | URLs **públicas** de los agentes, separadas por coma. `127.0.0.1` no es alcanzable desde Heroku. |
+| `CONFIAR_EN_PROXY` | `true` (Heroku añade `X-Forwarded-For`). |
+| `DOCS_HABILITADOS` | `false` para no exponer `/docs` públicamente. |
+| `AUDIT_LOG` | Vacío: el filesystem del dyno es efímero y se pierde en cada reinicio. |
+| `TELEGRAM_TOKEN` / `TELEGRAM_SECRET` | Solo si se activa el canal de Telegram. |
+
+Verificación tras el despliegue: `GET https://<app>.herokuapp.com/salud` debe responder `200` y
+`/v1/agentes` debe listar los agentes descubiertos por túnel.
+
+Nota: las sesiones y el caché de agentes viven en memoria, así que el servicio debe quedar en **un
+solo dyno** (escala 1) o las peticiones pueden caer en un dyno sin la sesión.
+
 ### 7.7 Publicar en GitHub
 
 Desde la raíz, con el remoto y la rama indicados:

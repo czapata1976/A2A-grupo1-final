@@ -1,0 +1,4 @@
+# Dependencias de despliegue desde la raíz del monorepo (Heroku).
+# El servicio vive en servicio-fastapi/ y se reutiliza su lista de dependencias
+# para no duplicar versiones. La ruta se resuelve relativa a este archivo.
+-r servicio-fastapi/requirements.txt
