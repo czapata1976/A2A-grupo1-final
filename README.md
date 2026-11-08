@@ -43,9 +43,9 @@ pruebas, scripts y documentación.
 
 ## 3. Inicio rápido
 
-Requisitos: Python 3.12, una clave de Gemini (`GOOGLE_API_KEY`) para czz/bryhan/CM y, si se usa a
-Alejandra, `ANTHROPIC_API_KEY`. Para el canal Telegram se necesita un bot de BotFather
-(`TELEGRAM_TOKEN`) y un túnel HTTPS; no se requieren Gmail ni WhatsApp.
+Requisitos: Python 3.12 y una clave de Gemini (`GOOGLE_API_KEY`) para los cuatro agentes. Para el
+canal Telegram se necesita un bot de BotFather (`TELEGRAM_TOKEN`) y un túnel HTTPS; no se requieren
+Gmail ni WhatsApp.
 
 ```powershell
 # Terminal 1 · desde la raíz del taller
@@ -156,8 +156,8 @@ notepad .env    # pega GOOGLE_API_KEY
 .venv\Scripts\langgraph.exe dev --port 2026
 ```
 
-Para los cuatro agentes, repite el patrón en `mi-agente-ale` (puerto 2027, `ANTHROPIC_API_KEY`) y
-`mi-agente-CM` (puerto 2028, `GOOGLE_API_KEY`).
+Para los cuatro agentes, repite el patrón en `mi-agente-ale` (puerto 2027) y `mi-agente-CM`
+(puerto 2028); ambos usan `GOOGLE_API_KEY`.
 
 ### 7.3 Levantar la API
 
@@ -440,8 +440,7 @@ Cada carpeta incluye:
 
 ## 5. Cómo ejecutar
 
-Requisitos: Python 3.12 y una clave de Gemini (`GOOGLE_API_KEY`) o de Anthropic
-(`ANTHROPIC_API_KEY`, solo el agente de Alejandra).
+Requisitos: Python 3.12 y una clave de Gemini (`GOOGLE_API_KEY`) para los cuatro agentes.
 
 ### 5.1 Entorno del servidor (uno por agente)
 

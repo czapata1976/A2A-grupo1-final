@@ -12,7 +12,7 @@ los imports heredados, pero **el agente es otro**: auditoría de cumplimiento no
 | --- | --- |
 | `src/agente_viajes/prompts.py` | Perfil: nombre, especialidad, personalidad, antecedentes, tres habilidades y límites (del blueprint). |
 | `src/agente_viajes/herramientas.py` | `consultar_mis_apuntes` + 8 herramientas de auditoría (SII, CMF, cumplimiento, fondos y checklists). Deterministas. |
-| `src/agente_viajes/graph.py` | `create_agent(..., name="agente_alejandra")` con `ChatAnthropic`. Sin checkpointer. |
+| `src/agente_viajes/graph.py` | `create_agent(..., name="agente_alejandra")` con `ChatGoogleGenerativeAI`. Sin checkpointer. |
 | `langgraph.json` | Registra un solo grafo: `agente_alejandra`. |
 | `notebooks/a2a-test.ipynb` | Etapas 2 y 3 ejecutadas, con salidas guardadas. |
 | `bruno/` | Colección para probar la tarjeta y `message/send` contra el puerto 2025. |
@@ -26,8 +26,9 @@ los imports heredados, pero **el agente es otro**: auditoría de cumplimiento no
 
 ## Entorno
 - Python 3.11+ (el servidor de LangGraph lo exige). `py -3.12 -m venv .venv`, activar, `pip install -r requirements.txt`.
-- Claves solo en `.env` (ignorado por git). `.env.example` lista las variables. Proveedor: **Anthropic**
-  (`ANTHROPIC_API_KEY`, modelo `claude-sonnet-5-5`), porque los créditos de Gemini estaban agotados.
+- Claves solo en `.env` (ignorado por git). `.env.example` lista las variables. Proveedor: **Google Gemini**
+  (`GOOGLE_API_KEY`, modelo `gemini-3.5-flash-lite`), igual que los otros tres agentes del grupo.
+  La migración desde Anthropic se hizo porque la cuenta de Anthropic quedó sin créditos.
 - Levantar el agente: `.venv\Scripts\langgraph.exe dev --port 2025`. El servidor asigna un `assistant_id`
   UUID al grafo (`POST /assistants/search {"graph_id":"agente_alejandra"}`). Tarjeta:
   `GET /.well-known/agent-card.json?assistant_id=<uuid>`. Endpoint A2A: `POST /a2a/<uuid>`.

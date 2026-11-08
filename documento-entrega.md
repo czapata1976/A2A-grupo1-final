@@ -214,8 +214,7 @@ La guía exacta está en `servicio-fastapi/evidencias/README.md`.
 | Recurso | Acción |
 | --- | --- |
 | Python 3.12 | Instalar y verificar `py -3.12 --version`. |
-| Gemini | Crear una API key en Google AI Studio para czz, bryhan y CM. |
-| Anthropic | Crear una API key para Alejandra. |
+| Gemini | Crear una API key en Google AI Studio para los cuatro agentes. |
 | Puertos | 8000 para el gateway; 2025-2028 para los agentes. |
 | `.env` de agentes | Copiar cada `.env.example` y pegar la clave correspondiente. |
 | `.env` del gateway | Generado por `scripts/iniciar.ps1` o copiado desde `.env.example`; cambiar `API_KEYS`. |

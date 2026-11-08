@@ -34,7 +34,7 @@ el agente, sus herramientas y su prompt son propios.
 cd mi-agente-ale
 py -3.12 -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements.txt
-copy .env.example .env          # y pega tu ANTHROPIC_API_KEY
+copy .env.example .env          # y pega tu GOOGLE_API_KEY
 .venv\Scripts\langgraph.exe dev --port 2025
 ```
 
@@ -45,7 +45,7 @@ Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:2025/assistants/search" -C
 Invoke-RestMethod "http://127.0.0.1:2025/.well-known/agent-card.json?assistant_id=<uuid>"
 ```
 
-Después, `notebooks/a2a-test.ipynb` con un kernel que tenga `a2a-sdk` y `langchain-anthropic`
+Después, `notebooks/a2a-test.ipynb` con un kernel que tenga `a2a-sdk` y `langchain-google-genai`
 (`requirements-notebook.txt`), ejecutado de arriba abajo.
 
 > **Nota de entorno.** `a2a-sdk` sube `google-api-core`, que exige OpenTelemetry ≥ 1.44, mientras que

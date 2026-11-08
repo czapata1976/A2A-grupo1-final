@@ -11,7 +11,7 @@ El `contextId` de A2A se convierte en `thread_id`: la memoria por conversación 
 """
 import os
 from dotenv import load_dotenv
-from langchain_anthropic import ChatAnthropic
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.agents import create_agent
 
 from src.agente_viajes.herramientas import HERRAMIENTAS
@@ -19,7 +19,7 @@ from src.agente_viajes.prompts import SYSTEM_VIAJES
 
 load_dotenv()
 
-modelo = ChatAnthropic(model=os.environ.get("MODELO", "claude-sonnet-5-5"))
+modelo = ChatGoogleGenerativeAI(model=os.environ.get("MODELO", "gemini-3.5-flash-lite"))
 
 # Agente ReAct (LangChain 1.x): el modelo decide qué herramienta llamar, la llama, lee el resultado y responde.
 # Su estado tiene la clave `messages`: eso es lo único que A2A necesita para mapear sus `parts` de texto.

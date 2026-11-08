@@ -83,7 +83,7 @@ entornos de los agentes: cada uno tiene su propio `requirements.txt`.
 | Servicio FastAPI | `API_KEYS` (token de acceso al servicio) | `servicio-fastapi/.env` |
 | `agente_czz` | `GOOGLE_API_KEY` | `mi-agente-cz/.env` |
 | `agente_bryhan` | `GOOGLE_API_KEY` | `agente-bryhan/.env` |
-| `agente_alejandra` | `ANTHROPIC_API_KEY` | `mi-agente-ale/.env` |
+| `agente_alejandra` | `GOOGLE_API_KEY` | `mi-agente-ale/.env` |
 | `agente_soluciones_comerciales_marketing` | `GOOGLE_API_KEY` | `mi-agente-CM/.env` |
 | Canal Telegram | `TELEGRAM_TOKEN` (BotFather) y `TELEGRAM_SECRET` | `servicio-fastapi/.env` |
 
@@ -137,7 +137,7 @@ cd mi-agente-ale
 py -3.12 -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements.txt
 if (-not (Test-Path .env)) { copy .env.example .env }
-# Edita .env y pega ANTHROPIC_API_KEY
+# Edita .env y pega GOOGLE_API_KEY
 .venv\Scripts\langgraph.exe dev --port 2027
 
 # Terminal 4 · Carlos Monroy
@@ -475,7 +475,7 @@ heroku open
 - **Datos que se conservan:** no hay base de datos. Las sesiones y los `contextId` viven en memoria y
   se pierden al reiniciar. Si necesitas trazabilidad, conserva `logs/auditoria.jsonl`: contiene hashes,
   agentes, estados y duraciones, no el texto de las consultas.
-- **Servicios externos:** Gemini (czz, bryhan y CM), Anthropic (Alejandra) y los servidores LangGraph.
+- **Servicios externos:** Gemini (los cuatro agentes) y los servidores LangGraph.
   Sin ellos no hay respuesta de agente; el gateway devuelve un error claro.
 - No se declara el +1 de despliegue: la entrega es local y reproducible. El `Dockerfile` y el
   `Procfile` dejan preparado el camino.
