@@ -307,6 +307,17 @@ cd servicio-fastapi
 Las URLs `trycloudflare.com` son temporales: si se reinician los túneles hay que actualizar
 `A2A_SERVIDORES` en Heroku.
 
+#### Estado del despliegue (2026-11-08)
+
+| Dato | Valor |
+| --- | --- |
+| App | `a2agrupo1` (stack `heroku-24`, buildpack `heroku/python`, un dyno web) |
+| URL | https://a2agrupo1-225ba991428b.herokuapp.com |
+| Origen | Despliegue automático desde `main` de `czapata1976/A2A-grupo1-final` |
+| Verificado | `/salud` → `200`; `/v1/agentes` → 4 agentes; `/v1/consultas` → respuesta real en 6 s; `/` → consola web; `/docs` → `404` por `DOCS_HABILITADOS=false` |
+| Pendiente | `TELEGRAM_TOKEN` y `TELEGRAM_SECRET` para el canal de Telegram |
+
+
 Verificación tras el despliegue: `GET https://<app>.herokuapp.com/salud` debe responder `200` y
 `/v1/agentes` debe listar los agentes descubiertos por túnel.
 
