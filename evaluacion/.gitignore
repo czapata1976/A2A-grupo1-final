@@ -1,0 +1,11 @@
+# Clave del modelo calificador (no se publica)
+.env
+
+# Cachés de Python y de promptfoo
+__pycache__/
+*.pyc
+.pytest_cache/
+node_modules/
+.promptfoo/
+promptfoo-cache/
+*.log

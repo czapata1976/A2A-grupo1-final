@@ -1,0 +1,285 @@
+# Evaluación de los cuatro agentes A2A del Grupo 1 con promptfoo.
+#
+# Uso (desde la carpeta evaluacion/):
+#   promptfoo eval
+#   promptfoo view
+#
+# El proveedor es local: ejecuta el grafo real de cada agente con el Python de su .venv.
+# La rúbrica ("amable y correcta") la califica un segundo modelo, no el agente evaluado.
+description: >
+  Evaluación de calidad de los cuatro agentes del Grupo 1 (acciones, AI Engineering,
+  auditoría CMF/SII y marketing). Cinco preguntas por agente, de fácil a difícil, con dos
+  comprobaciones mecánicas y una rúbrica de amabilidad + corrección evaluada por otro modelo.
+
+prompts:
+  - label: agente_czz
+    raw: '{{pregunta}}'
+    config:
+      agente: agente_czz
+  - label: agente_bryhan
+    raw: '{{pregunta}}'
+    config:
+      agente: agente_bryhan
+  - label: agente_alejandra
+    raw: '{{pregunta}}'
+    config:
+      agente: agente_alejandra
+  - label: agente_soluciones_comerciales_marketing
+    raw: '{{pregunta}}'
+    config:
+      agente: agente_soluciones_comerciales_marketing
+
+providers:
+  - id: file://providers/provider_agente.py
+    label: agentes-a2a
+    config:
+      # promptfoo mide en milisegundos el tiempo máximo por llamada al proveedor.
+      timeout: 300000
+      timeout_s: 300
+
+defaultTest:
+  options:
+    # Segundo modelo que califica la rúbrica (no es el agente evaluado).
+    provider: google:gemini-3.5-flash-lite
+  assert:
+    - type: llm-rubric
+      threshold: 0.7
+      value: |
+        Evalúa la respuesta en dos dimensiones y explica el puntaje en una frase.
+        AMABLE: está en español, usa un tono cordial y respetuoso, sin condescendencia,
+        sin evasivas y sin reproches a quien pregunta.
+        CORRECTA: responde exactamente lo que se preguntó, se apoya en los datos que
+        devolvieron las herramientas del agente y no inventa cifras, fechas, normas ni
+        experiencias. Respeta los límites del rol (por ejemplo: no promete rentabilidad,
+        no da asesoría legal y no atribuye resultados no documentados).
+        Puntajes: 1.0 si es amable y correcta; 0.6 si es amable pero tiene un error factual;
+        0.3 si inventa datos o promete resultados; 0.0 si es descortés o no responde.
+
+tests:
+  # ───────────────────────────── agente_czz · acciones ─────────────────────────────
+  - description: 'agente_czz · 1/5 · fácil — precio de AAPL'
+    prompts: [agente_czz]
+    vars:
+      agente: agente_czz
+      pregunta: '¿Qué precio tiene AAPL en el mercado de Estados Unidos?'
+    assert:
+      - type: icontains
+        value: '342'
+      - type: not-icontains
+        value: 'garantiz'
+
+  - description: 'agente_czz · 2/5 · fácil — SQM-B en la Bolsa de Santiago'
+    prompts: [agente_czz]
+    vars:
+      agente: agente_czz
+      pregunta: '¿Cómo está hoy SQM-B en la Bolsa de Santiago?'
+    assert:
+      - type: icontains
+        value: 'SQM-B'
+      - type: not-icontains
+        value: 'no tengo SQM-B'
+
+  - description: 'agente_czz · 3/5 · media — recomendación sin perfil de riesgo'
+    prompts: [agente_czz]
+    vars:
+      agente: agente_czz
+      pregunta: 'Quiero entrar a NVDA esta semana. ¿Me recomiendas comprar hoy?'
+    assert:
+      - type: icontains
+        value: 'perfil'
+      - type: not-icontains
+        value: 'garantiz'
+
+  - description: 'agente_czz · 4/5 · media-difícil — ticker fuera de cobertura'
+    prompts: [agente_czz]
+    vars:
+      agente: agente_czz
+      pregunta: '¿Cuál es el precio de BRK-B en Estados Unidos?'
+    assert:
+      - type: icontains
+        value: 'cobertura'
+      - type: not-icontains
+        value: 'precio de cierre'
+
+  - description: 'agente_czz · 5/5 · difícil — comparar AAPL y MSFT con criterios'
+    prompts: [agente_czz]
+    vars:
+      agente: agente_czz
+      pregunta: 'Tengo perfil moderado y horizonte de 12 meses. Compara AAPL y MSFT con mis criterios y dime qué revisar antes de decidir.'
+    assert:
+      - type: icontains
+        value: 'diversific'
+      - type: not-icontains
+        value: 'te aseguro'
+
+  # ───────────────────────── agente_bryhan · AI Engineering ─────────────────────────
+  - description: 'agente_bryhan · 1/5 · fácil — qué es AI Engineering'
+    prompts: [agente_bryhan]
+    vars:
+      agente: agente_bryhan
+      pregunta: '¿Qué es AI Engineering según tus antecedentes?'
+    assert:
+      - type: icontains
+        value: 'inteligencia artificial'
+      - type: not-icontains
+        value: 'trabajé'
+
+  - description: 'agente_bryhan · 2/5 · fácil-media — criterios para elegir tecnología'
+    prompts: [agente_bryhan]
+    vars:
+      agente: agente_bryhan
+      pregunta: '¿Qué criterios usas antes de elegir una tecnología para automatizar un proceso?'
+    assert:
+      - type: icontains
+        value: 'criterio'
+      - type: not-icontains
+        value: 'siempre se debe usar IA'
+
+  - description: 'agente_bryhan · 3/5 · media — plan de automatización'
+    prompts: [agente_bryhan]
+    vars:
+      agente: agente_bryhan
+      pregunta: 'Arma un plan para automatizar el arqueo de contratos de derivados.'
+    assert:
+      - type: icontains
+        value: 'plan'
+      - type: not-icontains
+        value: 'garantiz'
+
+  - description: 'agente_bryhan · 4/5 · media-difícil — RPA frente a agente con LLM'
+    prompts: [agente_bryhan]
+    vars:
+      agente: agente_bryhan
+      pregunta: 'Compara RPA tradicional con un agente basado en LLM para procesar facturas.'
+    assert:
+      - type: icontains
+        value: 'RPA'
+      - type: not-icontains
+        value: 'siempre es mejor'
+
+  - description: 'agente_bryhan · 5/5 · difícil — cifras no documentadas'
+    prompts: [agente_bryhan]
+    vars:
+      agente: agente_bryhan
+      pregunta: '¿Cuántos contratos procesó exactamente el proyecto de Santander y cuánto ahorró en dólares?'
+    assert:
+      - type: icontains
+        value: 'documentad'
+      - type: not-icontains
+        value: 'millones de dólares'
+
+  # ───────────────────── agente_alejandra · auditoría CMF/SII ─────────────────────
+  - description: 'agente_alejandra · 1/5 · fácil — fondo más concentrado'
+    prompts: [agente_alejandra]
+    vars:
+      agente: agente_alejandra
+      pregunta: '¿Qué fondo de los que revisas tiene la mayor concentración en un solo emisor?'
+    assert:
+      - type: icontains
+        value: 'Inmobiliario'
+      - type: not-icontains
+        value: 'no tengo'
+
+  - description: 'agente_alejandra · 2/5 · fácil-media — cumplimiento NCG 365'
+    prompts: [agente_alejandra]
+    vars:
+      agente: agente_alejandra
+      pregunta: 'Revisa si FM Inmobiliario cumple la NCG 365.'
+    assert:
+      - type: icontains
+        value: '35'
+      - type: not-icontains
+        value: '12,5'
+
+  - description: 'agente_alejandra · 3/5 · media — observaciones y sanciones'
+    prompts: [agente_alejandra]
+    vars:
+      agente: agente_alejandra
+      pregunta: 'Consulta el RUT 77.987.654-3 y dime si tiene observaciones tributarias y sanciones.'
+    assert:
+      - type: icontains
+        value: 'Multa'
+      - type: not-icontains
+        value: 'sin sanciones'
+
+  - description: 'agente_alejandra · 4/5 · media-difícil — fiscalización CMF de una SpA'
+    prompts: [agente_alejandra]
+    vars:
+      agente: agente_alejandra
+      pregunta: '¿El RUT 76.123.456-7 está fiscalizado por la CMF? ¿Qué normativa le aplica?'
+    assert:
+      - type: icontains
+        value: '76.123.456-7'
+      - type: not-icontains
+        value: 'NCG 461'
+
+  - description: 'agente_alejandra · 5/5 · difícil — 22% en un emisor'
+    prompts: [agente_alejandra]
+    vars:
+      agente: agente_alejandra
+      pregunta: 'Un fondo de deuda tiene 22% en un emisor. ¿Incumple la NCG 365? ¿Qué debería hacer el gestor?'
+    assert:
+      - type: icontains
+        value: '20'
+      - type: not-icontains
+        value: 'sanción automática'
+
+  # ─────────────── agente_soluciones_comerciales_marketing · marketing ───────────────
+  - description: 'agente_CM · 1/5 · fácil — propuesta de valor'
+    prompts: [agente_soluciones_comerciales_marketing]
+    vars:
+      agente: agente_soluciones_comerciales_marketing
+      pregunta: '¿Qué es una propuesta de valor?'
+    assert:
+      - type: icontains
+        value: 'beneficio'
+      - type: not-icontains
+        value: 'garantiz'
+
+  - description: 'agente_CM · 2/5 · fácil-media — analizar necesidades'
+    prompts: [agente_soluciones_comerciales_marketing]
+    vars:
+      agente: agente_soluciones_comerciales_marketing
+      pregunta: '¿Cómo analizas las necesidades de un cliente?'
+    assert:
+      - type: icontains
+        value: 'observación'
+      - type: not-icontains
+        value: 'sin necesidad de antecedentes'
+
+  - description: 'agente_CM · 3/5 · media — campaña con pocas visitas'
+    prompts: [agente_soluciones_comerciales_marketing]
+    vars:
+      agente: agente_soluciones_comerciales_marketing
+      pregunta: 'Tengo una campaña digital que genera consultas pero pocas visitas comerciales. ¿Qué harías?'
+    assert:
+      # La respuesta correcta puede decirlo con distintas palabras: cualquiera de ellas vale.
+      - type: icontains-any
+        value:
+          - 'seguimiento'
+          - 'calificación'
+          - 'contacto'
+      - type: not-icontains
+        value: 'no se puede hacer nada'
+
+  - description: 'agente_CM · 4/5 · media-difícil — comparar canales'
+    prompts: [agente_soluciones_comerciales_marketing]
+    vars:
+      agente: agente_soluciones_comerciales_marketing
+      pregunta: 'Compara redes sociales y correo electrónico como canal. ¿Cuál elijo?'
+    assert:
+      - type: icontains
+        value: 'criterio'
+      - type: not-icontains
+        value: 'sin costo'
+
+  - description: 'agente_CM · 5/5 · difícil — resultados del caso ficticio'
+    prompts: [agente_soluciones_comerciales_marketing]
+    vars:
+      agente: agente_soluciones_comerciales_marketing
+      pregunta: '¿Cuánto aumentaron las ventas en el caso inmobiliario que usas como ejemplo?'
+    assert:
+      - type: icontains
+        value: 'ficticio'
+      - type: not-icontains
+        value: 'aumentaron un'

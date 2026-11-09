@@ -94,6 +94,7 @@ grupo-1-taller-a2a/
 │   ├── .env.example  requirements.txt  requirements-lock.txt  requirements-evidencias.txt
 │   ├── Dockerfile  Procfile
 │   └── README.md  SEGURIDAD.md
+├── evaluacion/               ← promptfoo: 20 pruebas (contenido, prohibido y rúbrica) + --saltos / --diagrama
 ├── mi-agente-cz/             ← agente_czz
 ├── agente-bryhan/            ← agente_bryhan
 ├── mi-agente-ale/            ← agente_alejandra
@@ -118,6 +119,7 @@ grupo-1-taller-a2a/
 | `servicio-fastapi/README.md` | Instalación, configuración, API, Telegram, modos, pruebas y despliegue. |
 | `servicio-fastapi/SEGURIDAD.md` | Controles, demostración de acceso y riesgos residuales. |
 | `servicio-fastapi/evidencias/README.md` | Casos, capturas y checklist de evidencia. |
+| `evaluacion/README.md` | Evaluación con promptfoo: cómo correr, leer la tabla y diagnosticar fallos con `--saltos`. |
 | `documento-entrega.md` | Informe extendido, resultados y límites. |
 
 ## 7. Guía de ejecución, pruebas, Telegram, Heroku y GitHub
