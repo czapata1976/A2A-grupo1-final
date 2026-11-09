@@ -23,7 +23,9 @@ final contiene el texto íntegro de cada aporte: no se reescriben cifras, unidad
 Telegram no duplica la lógica: solo es otro punto de entrada al gateway.
 
 La entrega incluye código, `.env.example`, pruebas automatizadas, scripts de arranque y detención,
-guía de evidencias y preparación para un despliegue opcional.
+guía de evidencias y preparación para un despliegue opcional. Además, `evaluacion/` aporta una
+evaluación automática con **promptfoo**: 20 casos con comprobaciones mecánicas y una rúbrica de
+calidad, con **18/20 aprobadas (90 %)** en la última corrida.
 
 ## 2. Problema y solución
 
@@ -196,7 +198,7 @@ agente con modelo.
 
 ### 6.4 Pendiente de ejecución del grupo
 
-Con las claves de Gemini/Anthropic configuradas y los agentes levantados:
+Con las claves de Gemini configuradas y los agentes levantados:
 
 1. ejecutar `scripts/probar_api.py`;
 2. ejecutar `scripts/capturar_evidencias.py` (Playwright) para generar las capturas de acceso,
@@ -208,6 +210,56 @@ Con las claves de Gemini/Anthropic configuradas y los agentes levantados:
 6. guardar todo en `servicio-fastapi/evidencias/capturas/`.
 
 La guía exacta está en `servicio-fastapi/evidencias/README.md`.
+
+### 6.5 Evaluación de calidad con promptfoo
+
+Se agregó una evaluación automática de los cuatro agentes con **promptfoo 0.125.1**
+(`evaluacion/`). Cada agente recibe **cinco preguntas** de dificultad creciente (fácil, fácil-media,
+media, media-difícil y difícil) y cada caso debe pasar **tres comprobaciones**:
+
+1. `icontains` / `icontains-any`: el contenido esperado aparece en la respuesta.
+2. `not-icontains`: no aparece el contenido prohibido (cifras inventadas, promesas, etc.).
+3. `llm-rubric` con umbral 0.7: otro modelo califica **amabilidad y corrección**.
+
+Comando:
+
+```powershell
+cd evaluacion
+copy .env.example .env      # GOOGLE_API_KEY del modelo calificador (no la de los agentes)
+promptfoo eval --output resultados.json
+promptfoo view              # http://localhost:15500
+```
+
+Resultado de la corrida `eval-zTV` (2026-11-09T00:24:12Z): **18/20 aprobadas (90 %)**, sin errores
+de ejecución.
+
+| Agente | Casos | Latencia media | Mínima | Máxima |
+| --- | --- | --- | --- | --- |
+| `agente_czz` | 5/5 | 14,8 s | 5,7 s | 21,6 s |
+| `agente_bryhan` | 5/5 | 25,2 s | 21,1 s | 28,3 s |
+| `agente_alejandra` | 4/5 | 19,0 s | 15,5 s | 24,9 s |
+| `agente_soluciones_comerciales_marketing` | 4/5 | 16,9 s | 15,3 s | 18,4 s |
+
+La rúbrica de calidad pasó en **20/20** casos (score 1,0): las dos fallas son de *contenido
+esperado*, no de trato ni de corrección.
+
+**Fallos y causa raíz** (hallazgos reales del agente, no errores del evaluador):
+
+| Caso | Aserción | Causa |
+| --- | --- | --- |
+| `agente_alejandra` · 1/5 — fondo más concentrado | espera «Inmobiliario» | No existe una herramienta para listar fondos; el agente pasa texto libre a `consultar_mis_apuntes`, que solo acepta `conceptos`, `criterios` o `caso`. |
+| `agente_soluciones_comerciales_marketing` · 5/5 — resultados del caso ficticio | espera «ficticio» | Mismo patrón: tema libre contra una herramienta de claves cerradas. |
+
+El detalle paso a paso se obtiene con `--saltos`, que imprime cada nodo del grafo, la herramienta
+llamada con sus argumentos, lo que devolvió y la respuesta final:
+
+```powershell
+python evaluacion\agente.py --agente agente_alejandra `
+  --pregunta "¿Qué fondo de los que revisas tiene la mayor concentración en un solo emisor?" --saltos
+```
+
+Esto permite distinguir si el agente no llamó la herramienta, la llamó con argumentos equivocados,
+si la herramienta respondió bien y el modelo redactó mal, o si la aserción era demasiado literal.
 
 ## 7. Preparación manual
 
@@ -221,6 +273,7 @@ La guía exacta está en `servicio-fastapi/evidencias/README.md`.
 | Telegram | Crear un bot con @BotFather, guardar `TELEGRAM_TOKEN` y definir `TELEGRAM_SECRET`. |
 | Túnel HTTPS | Para probar el webhook local con Telegram, por ejemplo `cloudflared tunnel --url http://localhost:8000`. |
 | Evaluador | Recibe la clave por un canal privado; no está en el repositorio. |
+| promptfoo | `npm install -g promptfoo` (0.125.1) y `evaluacion/.env` con la clave del modelo calificador. |
 
 Se requiere un bot de Telegram y un túnel HTTPS para el canal Telegram; no se requieren cuentas de
 Gmail ni WhatsApp.
@@ -247,11 +300,16 @@ Gmail ni WhatsApp.
 - Al reiniciar un agente se pierden sus hilos en memoria.
 - El canal Telegram necesita HTTPS, token de BotFather y el mismo secreto al registrar el webhook.
   No hay deduplicación de updates y el procesamiento es en memoria.
+- `consultar_mis_apuntes` acepta solo claves cerradas (`conceptos`, `criterios`, `caso`); una consulta
+  de tema libre puede fallar aunque la respuesta redactada sea razonable. La evaluación lo detecta y
+  queda registrado como los dos casos fallidos (18/20).
 
 ## 10. Conclusión
 
 La implementación conecta el trabajo A2A del grupo con una forma de uso real, protegida y reproducible.
 El valor principal no es solo la interfaz: el gateway demuestra el recorrido completo, conserva la
 fidelidad de las respuestas y deja evidencia de qué agente respondió, cuánto tardó y con qué contexto.
-La consola web y Telegram usan el mismo orquestador; no hay agentes ni respuestas duplicadas.
+La consola web y Telegram usan el mismo orquestador; no hay agentes ni respuestas duplicadas. La
+evaluación con promptfoo cierra el circuito de calidad: 20 casos, tres comprobaciones por caso y una
+rúbrica externa, con 18/20 aprobadas y dos hallazgos concretos que quedan documentados.
 Las capturas del recorrido con modelos reales quedan como el paso final de evidencia del grupo.
