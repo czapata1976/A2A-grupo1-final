@@ -54,7 +54,7 @@ cd servicio-fastapi
 
 | Evidencia | Estado | Dónde se ve |
 | --- | --- | --- |
-| Pruebas unitarias de auth, validación, orquestación y A2A | **Verificada** (52 aprobadas, 1 integración omitida) | `pytest -q` |
+| Pruebas unitarias de auth, validación, orquestación y A2A | **Verificada** (64 aprobadas, 1 integración omitida) | `pytest -q` |
 | Arranque real de FastAPI en local | **Verificada** (salud, frontend y 401 comprobados) | `evidencias/ultima-prueba.json` tras ejecutar el script |
 | Descubrimiento y `message/send` contra `langgraph dev` real | **Verificado**; con clave ficticia el agente falla y el gateway devuelve `502` claro | logs de la prueba de protocolo |
 | Capturador Playwright (UI, acceso, consultas y traza) | **Verificado** con un servidor A2A de prueba; las capturas reales quedan pendientes | ejecución del capturador |

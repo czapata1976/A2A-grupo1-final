@@ -1,12 +1,14 @@
 <!doctype html>
 <html lang="es">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <title>Agentes A2A · Grupo 1</title>
-  <link rel="stylesheet" href="/static/styles.css?v=1.2.0">
+  <link rel="stylesheet" href="/static/styles.css?v=1.3.0">
 </head>
+
 <body>
   <div class="fondo" aria-hidden="true"></div>
 
@@ -38,7 +40,7 @@
           <label for="clave">Clave API</label>
           <div class="campo-clave">
             <input id="clave" type="password" autocomplete="current-password" spellcheck="false"
-                   placeholder="Mínimo 12 caracteres" required>
+              placeholder="Mínimo 12 caracteres" required>
             <button id="btn-ver" type="button" class="boton-icono" aria-label="Mostrar clave">Ver</button>
           </div>
           <button id="btn-conectar" type="submit" class="boton-primario">Conectar</button>
@@ -79,25 +81,29 @@
 
         <div class="bloque">
           <h2>Ejemplos</h2>
-          <button class="ejemplo" type="button" data-ejemplo="accion">Precio de una acción</button>
-          <button class="ejemplo" type="button" data-ejemplo="multiaente">Consulta multiaente</button>
-          <button class="ejemplo" type="button" data-ejemplo="faltante">Dato faltante</button>
+          <button class="ejemplo" type="button" data-ejemplo="accion">Precio, PER y endeudamiento</button>
+          <button class="ejemplo" type="button" data-ejemplo="multiagente">Consulta multiagente</button>
+          <button class="ejemplo" type="button" data-ejemplo="auditoria">Auditoría por nombre</button>
+          <button class="ejemplo" type="button" data-ejemplo="automatizacion">Plan de automatización</button>
+          <button class="ejemplo" type="button" data-ejemplo="marketing">Campaña con pocas visitas</button>
         </div>
 
-        <p class="pie">LOCAL · sin URL pública<br>Grupo 1 · UAI Agentic AI<br><a href="/docs" target="_blank" rel="noopener">Documentación API</a></p>
+        <p class="pie">LOCAL · sin URL pública<br>Grupo 1 · UAI Agentic AI<br><a href="/docs" target="_blank"
+            rel="noopener">Documentación API</a></p>
       </aside>
 
       <section class="panel-chat" aria-label="Conversación">
         <div id="mensajes" class="mensajes" aria-live="polite">
           <div class="mensaje mensaje-sistema">
-            <p>Escribe una consulta. Si participan varios agentes, la respuesta final conserva el texto íntegro de cada aporte.</p>
+            <p>Escribe una consulta. Si participan varios agentes, la respuesta final conserva el texto íntegro de cada
+              aporte.</p>
           </div>
         </div>
 
         <form id="form-consulta" class="compositor">
           <label class="sr-only" for="consulta">Consulta</label>
-          <textarea id="consulta" rows="2" maxlength="4000"
-                    placeholder="Ej.: ¿Cuánto vale AAPL en el mercado US?" required></textarea>
+          <textarea id="consulta" rows="2" maxlength="4000" placeholder="Ej.: ¿Cuánto vale AAPL en el mercado US?"
+            required></textarea>
           <button id="btn-enviar" type="submit" class="boton-primario">Enviar</button>
         </form>
         <p class="contador"><span id="contador">0</span>/4000 · Enter para enviar, Shift+Enter para salto de línea</p>
@@ -126,6 +132,7 @@
     </section>
   </main>
 
-  <script src="/static/app.js?v=1.2.0" defer></script>
+  <script src="/static/app.js?v=1.3.0" defer></script>
 </body>
+
 </html>

@@ -545,7 +545,7 @@ async function enviarConsulta(evento) {
 
 function nuevaConversacion() {
   if (estado.sessionId && estado.clave) {
-    api(`/v1/sesiones/${encodeURIComponent(estado.sessionId)}`, { method: "DELETE" }).catch(() => {});
+    api(`/v1/sesiones/${encodeURIComponent(estado.sessionId)}`, { method: "DELETE" }).catch(() => { });
   }
   estado.sessionId = crearSesionId();
   sessionStorage.setItem(SESION_STORAGE, estado.sessionId);
@@ -569,26 +569,42 @@ function configurarClave() {
   el.clave.focus();
 }
 
+function elegirAgentes(preferidos) {
+  estado.seleccion.clear();
+  for (const agente of estado.agentes) {
+    if (preferidos.includes(agente.grafo)) {
+      estado.seleccion.add(agente.grafo);
+    }
+  }
+  if (estado.seleccion.size > 1) {
+    estado.modo = "paralelo";
+  } else if (estado.seleccion.size === 1) {
+    estado.modo = "individual";
+  } else {
+    estado.modo = "auto";
+  }
+}
+
 function aplicarEjemplo(tipo) {
   if (tipo === "accion") {
-    el.consulta.value = "¿Cuánto vale AAPL en el mercado US y qué debería revisar antes de invertir?";
-    estado.seleccion.clear();
-    estado.modo = "auto";
-  } else if (tipo === "multiaente") {
     el.consulta.value =
-      "Evalúa si conviene invertir en Falabella: quiero el dato de mercado, una revisión de cumplimiento normativo y un plan para automatizar el análisis.";
-    estado.seleccion.clear();
-    const preferidos = ["agente_czz", "agente_alejandra", "agente_bryhan"];
-    for (const agente of estado.agentes) {
-      if (preferidos.includes(agente.grafo)) {
-        estado.seleccion.add(agente.grafo);
-      }
-    }
-    estado.modo = estado.seleccion.size > 1 ? "paralelo" : "auto";
-  } else if (tipo === "faltante") {
-    el.consulta.value = "¿Cuánto vale AAPL?";
-    estado.seleccion.clear();
-    estado.modo = "auto";
+      "¿Cuánto vale AAPL en el mercado US? Revisa también su PER, ratio de endeudamiento y márgenes de utilidad.";
+    elegirAgentes(["agente_czz"]);
+  } else if (tipo === "multiagente") {
+    el.consulta.value =
+      "Evalúa si conviene invertir en Falabella: quiero el dato de mercado con fundamentales, una revisión de cumplimiento normativo y un plan para automatizar el análisis.";
+    elegirAgentes(["agente_czz", "agente_alejandra", "agente_bryhan"]);
+  } else if (tipo === "auditoria") {
+    el.consulta.value =
+      "Revisa si Comercial Andina Ltda tiene deuda tributaria pendiente y sanciones vigentes en la CMF.";
+    elegirAgentes(["agente_alejandra"]);
+  } else if (tipo === "automatizacion") {
+    el.consulta.value = "Arma un plan para automatizar el arqueo de contratos de derivados.";
+    elegirAgentes(["agente_bryhan"]);
+  } else if (tipo === "marketing") {
+    el.consulta.value =
+      "Tengo una campaña digital que genera consultas pero pocas visitas comerciales. ¿Qué harías?";
+    elegirAgentes(["agente_soluciones_comerciales_marketing"]);
   }
   el.modo.value = estado.modo;
   actualizarSeleccion();

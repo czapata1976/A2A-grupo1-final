@@ -75,7 +75,17 @@ debería haberse ejecutado.
 
 ## 5. Resultado de la última corrida
 
-**18/20 aprobadas (90 %).** Las dos fallas son hallazgos reales del agente auditor y del agente
-comercial: ambos pasan un tema en texto libre a `consultar_mis_apuntes`, que solo acepta
-`conceptos`, `criterios` o `caso`, y no existe una herramienta para listar fondos. El detalle se ve
-con `--saltos` y queda en `resultados.json`.
+**20/20 aprobadas (100 %)** en la corrida `eval-Ozb` (2026-11-10). La rúbrica de calidad pasó en todos
+los casos con score 1,0.
+
+A partir de las corridas anteriores se corrigió lo que la evaluación detectó:
+
+| Hallazgo | Corrección |
+| --- | --- |
+| `agente_alejandra` no podía enumerar fondos | Nueva herramienta `listar_fondos` |
+| `agente_CM` no resolvía temas libres en sus apuntes | `consultar_mis_apuntes` busca por contenido |
+| `agente_czz` narraba «procedo a consultar» sin ejecutar | Regla «ejecuta, no anuncies» en el prompt |
+| Aserciones demasiado literales | `icontains-any` con sinónimos en las pruebas 18-20 |
+| El calificador marcaba 2026 como fecha inválida | La rúbrica declara el contexto temporal del taller |
+
+El detalle se ve con `--saltos` y queda en `resultados.json`.

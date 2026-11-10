@@ -4,7 +4,9 @@
 **Taller:** Implementación y ejecución local
 **Grupo:** 1
 **Opción:** Servicio FastAPI protegido + consola web de chat + canales Telegram y WhatsApp
-**Estado:** implementación local reproducible, suite automatizada aprobada y descubrimiento/manejo de error A2A verificados contra `langgraph dev`; las capturas del recorrido real con modelos quedan pendientes de ejecución con las claves del grupo.
+**Estado:** implementación local reproducible, suite automatizada aprobada, descubrimiento A2A verificado
+contra `langgraph dev`, canales web/Telegram/WhatsApp funcionando y evaluación de calidad con promptfoo
+**20/20** (2026-11-10); quedan pendientes las capturas formales del recorrido.
 
 
 > Esta entrega continúa el **Taller A2A**. No reemplaza los agentes: los reutiliza. El detalle del
@@ -69,6 +71,18 @@ cd servicio-fastapi
 
 Si los agentes aún no tienen `.venv`, sigue `servicio-fastapi/README.md` §4.1. Para los cuatro agentes,
 usa 2025, 2026, 2027 y 2028, y ajusta `A2A_SERVIDORES` en `servicio-fastapi/.env`.
+
+Los canales desplegados (consola web y Telegram) necesitan llegar a los agentes por HTTPS. Con los
+cuatro `langgraph dev` arriba, un solo comando abre un túnel por agente, los verifica y actualiza
+`A2A_SERVIDORES` en Heroku:
+
+```powershell
+.\servicio-fastapi\.venv\Scripts\python.exe servicio-fastapi\scripts\tuneles_agentes.py --heroku a2agrupo1
+```
+
+La URL de un túnel rápido cambia en cada reinicio: vuelve a ejecutar el comando y revisa
+`GET /v1/agentes` hasta ver los cuatro agentes en `disponible: true`. Para cerrar los túneles:
+`...tuneles_agentes.py --detener`.
 
 Para Telegram:
 
@@ -204,7 +218,7 @@ cd servicio-fastapi
 .venv\Scripts\python.exe -m pytest -q
 ```
 
-Resultado esperado: **52 aprobadas, 1 omitida**. La integración real se activa con los agentes
+Resultado esperado: **64 aprobadas, 1 omitida**. La integración real se activa con los agentes
 arriba:
 
 ```powershell

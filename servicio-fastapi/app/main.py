@@ -160,14 +160,29 @@ def crear_app(
             response.headers["Cache-Control"] = "no-store"
         elif ruta.startswith("/static/"):
             response.headers["Cache-Control"] = "public, max-age=3600"
-        logger.info(
-            "%s %s -> %s (%d ms) solicitud_id=%s",
-            request.method,
-            ruta,
-            response.status_code,
-            duracion_ms,
-            solicitud_id,
+        # El panel de WhatsApp consulta estado/QR/código cada pocos segundos: esas peticiones
+        # correctas no se registran para que el log no crezca sin control. Los errores sí.
+        sondeo = ruta in {"/salud"} or ruta.startswith("/static/") or (
+            request.method == "GET" and ruta in {"/whatsapp/estado", "/whatsapp/qr", "/whatsapp/codigo"}
         )
+        if response.status_code >= 400:
+            logger.warning(
+                "%s %s -> %s (%d ms) solicitud_id=%s",
+                request.method,
+                ruta,
+                response.status_code,
+                duracion_ms,
+                solicitud_id,
+            )
+        elif not sondeo:
+            logger.info(
+                "%s %s -> %s (%d ms) solicitud_id=%s",
+                request.method,
+                ruta,
+                response.status_code,
+                duracion_ms,
+                solicitud_id,
+            )
         return response
 
     @app.exception_handler(ErrorServicio)

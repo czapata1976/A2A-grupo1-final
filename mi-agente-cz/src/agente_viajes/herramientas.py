@@ -149,4 +149,94 @@ def consultar_acciones(ticker: str, pais: str) -> dict | str:
     }
 
 
-HERRAMIENTAS = [consultar_mis_apuntes, consultar_acciones]
+# Fundamentales simulados del taller: PER, deuda/patrimonio y márgenes.
+# En producción vendrían de los estados financieros y de un proveedor de datos de mercado.
+FUENTE_FUNDAMENTALES = "datos simulados del taller (no son cifras reales de mercado)"
+
+FUNDAMENTALES = {
+    ("AAPL", "US"): {"per": 31.4, "deuda_patrimonio": 1.87, "margen_bruto_pct": 46.2,
+                     "margen_operativo_pct": 31.5, "margen_neto_pct": 26.3},
+    ("MSFT", "US"): {"per": 35.2, "deuda_patrimonio": 0.42, "margen_bruto_pct": 69.8,
+                     "margen_operativo_pct": 44.6, "margen_neto_pct": 35.9},
+    ("NVDA", "US"): {"per": 48.6, "deuda_patrimonio": 0.16, "margen_bruto_pct": 74.9,
+                     "margen_operativo_pct": 61.2, "margen_neto_pct": 55.0},
+    ("AMZN", "US"): {"per": 41.3, "deuda_patrimonio": 0.58, "margen_bruto_pct": 48.5,
+                     "margen_operativo_pct": 11.2, "margen_neto_pct": 9.4},
+    ("GOOGL", "US"): {"per": 26.8, "deuda_patrimonio": 0.11, "margen_bruto_pct": 57.9,
+                      "margen_operativo_pct": 32.1, "margen_neto_pct": 27.4},
+    ("TSLA", "US"): {"per": 72.5, "deuda_patrimonio": 0.18, "margen_bruto_pct": 17.8,
+                     "margen_operativo_pct": 9.6, "margen_neto_pct": 7.1},
+    ("KO", "US"): {"per": 24.1, "deuda_patrimonio": 1.62, "margen_bruto_pct": 60.3,
+                   "margen_operativo_pct": 24.7, "margen_neto_pct": 23.4},
+    ("SQM-B", "CL"): {"per": 18.7, "deuda_patrimonio": 0.74, "margen_bruto_pct": 38.2,
+                      "margen_operativo_pct": 27.5, "margen_neto_pct": 16.9},
+    ("FALABELLA", "CL"): {"per": 12.3, "deuda_patrimonio": 1.05, "margen_bruto_pct": 34.6,
+                          "margen_operativo_pct": 8.9, "margen_neto_pct": 4.2},
+    ("CMPC", "CL"): {"per": 14.8, "deuda_patrimonio": 0.88, "margen_bruto_pct": 29.4,
+                     "margen_operativo_pct": 12.7, "margen_neto_pct": 7.5},
+    ("CCU", "CL"): {"per": 16.2, "deuda_patrimonio": 0.61, "margen_bruto_pct": 44.1,
+                    "margen_operativo_pct": 12.9, "margen_neto_pct": 8.3},
+    ("BCI", "CL"): {"per": 9.4, "deuda_patrimonio": 4.80, "margen_bruto_pct": None,
+                    "margen_operativo_pct": 42.1, "margen_neto_pct": 33.8,
+                    "nota": "El margen bruto no aplica a bancos; se informan margen operativo y neto."},
+    ("ANDINA-B", "CL"): {"per": 15.6, "deuda_patrimonio": 0.52, "margen_bruto_pct": 41.3,
+                         "margen_operativo_pct": 14.2, "margen_neto_pct": 9.8},
+}
+
+
+@tool
+def consultar_fundamentales(ticker: str, pais: str) -> dict | str:
+    """Consulta los fundamentales de una acción del taller.
+
+    `ticker` es el código (ej. AAPL, SQM-B) y `pais` el mercado (US o CL). Devuelve PER, ratio de
+    endeudamiento (deuda/patrimonio), margen bruto, operativo y neto, con fecha de corte. Si el
+    ticker no está cubierto, devuelve un texto explicando qué falta.
+    """
+    codigo = (ticker or "").strip().upper()
+    mercado = (pais or "").strip().upper()
+
+    if not codigo:
+        return "Necesito el ticker de la acción (por ejemplo AAPL o SQM-B). ¿Cuál quieres revisar?"
+    if not mercado:
+        return (
+            f"Para consultar los fundamentales de {codigo} necesito el mercado donde cotiza: "
+            f"{_mercados_disponibles()}. ¿En cuál cotiza?"
+        )
+    if mercado not in MERCADOS:
+        return f"No trabajo el mercado {mercado}. Mercados disponibles: {_mercados_disponibles()}."
+
+    datos = FUNDAMENTALES.get((codigo, mercado))
+    if datos is None:
+        otros = sorted(p for (t, p) in FUNDAMENTALES if t == codigo)
+        if otros:
+            return f"{codigo} no cotiza en {mercado}; lo tengo registrado en {', '.join(otros)}. ¿Consulto ese mercado?"
+        return f"No tengo fundamentales de {codigo} en {mercado}. Cobertura actual: {_tickers_de(mercado)}."
+
+    return dict(
+        datos,
+        ticker=codigo,
+        mercado=MERCADOS[mercado],
+        actualizado=FECHA_CORTE,
+        datos_simulados=True,
+        fuente=FUENTE_FUNDAMENTALES,
+    )
+
+
+@tool
+def derivar_a_cumplimiento(motivo: str) -> str:
+    """Deriva una revisión de contingencias normativas o tributarias al agente de auditoría.
+
+    Úsala cuando la consulta pida opinar sobre cumplimiento, sanciones, deuda tributaria o
+    normativa: esa revisión la realiza el agente de cumplimiento y auditoría (agente_alejandra).
+    """
+    detalle = (motivo or "").strip() or "Revisión de cumplimiento normativo o tributario"
+    return (
+        "Esta revisión corresponde al agente de cumplimiento y auditoría (agente_alejandra).\n"
+        f"Motivo: {detalle}.\n"
+        "Qué hacer: solicitar la revisión indicando la razón social o el nombre de fantasía de la "
+        "empresa (no hace falta el RUT). Ese agente consulta SII y CMF, revisa deuda tributaria, "
+        "sanciones y normativa aplicable, y entrega el diagnóstico con el siguiente paso."
+    )
+
+
+HERRAMIENTAS = [consultar_mis_apuntes, consultar_acciones, consultar_fundamentales, derivar_a_cumplimiento]

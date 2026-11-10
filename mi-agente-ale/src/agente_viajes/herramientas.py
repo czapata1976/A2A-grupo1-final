@@ -3,6 +3,8 @@ administradoras, la CMF (ej. SEIL, informes de valorización) o el SII.
 
 Todas son deterministas: no llaman al modelo y devuelven texto o diccionarios con los datos.
 """
+import unicodedata
+
 from langchain_core.tools import tool
 
 FONDOS = {
@@ -28,6 +30,26 @@ def consultar_fondo(nombre_fondo: str) -> dict:
     if not f:
         return {"error": f"No se encontró el fondo '{nombre_fondo}'. Fondos disponibles: {list(FONDOS)}"}
     return dict(f, nombre=nombre_fondo)
+
+
+@tool
+def listar_fondos() -> list[dict]:
+    """Lista los fondos disponibles con tipo, concentración en el mayor emisor y rentabilidad.
+
+    Sirve para responder "qué fondos revisas" o "cuál tiene la mayor concentración" sin pedir
+    nombres: ya devuelve el universo completo de fondos del taller.
+    """
+    limite = LIMITES_NORMATIVOS["concentracion_por_emisor_pct"]
+    return [
+        {
+            "nombre": nombre,
+            "tipo": datos["tipo"],
+            "mayor_emisor_pct": datos["mayor_emisor_pct"],
+            "rentabilidad_12m_pct": datos["rentabilidad_12m"],
+            "cumple_ncg_365": datos["mayor_emisor_pct"] <= limite,
+        }
+        for nombre, datos in FONDOS.items()
+    ]
 
 
 @tool
@@ -83,15 +105,53 @@ def generar_checklist_auditoria(tipo_fondo: str) -> list[str]:
 
 
 EMPRESAS_SII = {
-    "76.123.456-7": {"razon_social": "Inversiones del Sur SpA", "estado_actividad": "vigente",
-                      "declaraciones_al_dia": True, "ultima_declaracion_renta": "2026-04-28",
-                      "observaciones": []},
-    "77.987.654-3": {"razon_social": "Comercial Andina Ltda", "estado_actividad": "vigente",
-                      "declaraciones_al_dia": False, "ultima_declaracion_renta": "2025-04-30",
-                      "observaciones": ["Atraso en declaración de renta 2026", "IVA pendiente marzo 2026"]},
-    "78.555.111-2": {"razon_social": "Tecnología Pacífico S.A.", "estado_actividad": "término de giro",
-                      "declaraciones_al_dia": True, "ultima_declaracion_renta": "2025-04-29",
-                      "observaciones": []},
+    "76.123.456-7": {
+        "razon_social": "Inversiones del Sur SpA",
+        "nombre_fantasia": "Inversiones del Sur",
+        "estado_actividad": "vigente",
+        "declaraciones_al_dia": True,
+        "ultima_declaracion_renta": "2026-04-28",
+        "deuda_tributaria_clp": 0,
+        "deuda_detalle": [],
+        "observaciones": [],
+    },
+    "77.987.654-3": {
+        "razon_social": "Comercial Andina Ltda",
+        "nombre_fantasia": "Comercial Andina",
+        "estado_actividad": "vigente",
+        "declaraciones_al_dia": False,
+        "ultima_declaracion_renta": "2025-04-30",
+        "deuda_tributaria_clp": 12_480_000,
+        "deuda_detalle": [
+            "IVA pendiente marzo 2026: $7.480.000",
+            "Reajustes e intereses: $5.000.000",
+        ],
+        "observaciones": ["Atraso en declaración de renta 2026", "IVA pendiente marzo 2026"],
+    },
+    "78.555.111-2": {
+        "razon_social": "Tecnología Pacífico S.A.",
+        "nombre_fantasia": "Tecnología Pacífico",
+        "estado_actividad": "término de giro",
+        "declaraciones_al_dia": True,
+        "ultima_declaracion_renta": "2025-04-29",
+        "deuda_tributaria_clp": 0,
+        "deuda_detalle": [],
+        "observaciones": [],
+    },
+    "79.123.456-8": {
+        "razon_social": "Viña Los Andes SpA",
+        "nombre_fantasia": "Viña Los Andes",
+        "estado_actividad": "vigente",
+        "declaraciones_al_dia": False,
+        "ultima_declaracion_renta": "2025-04-30",
+        "deuda_tributaria_clp": 18_450_000,
+        "deuda_detalle": [
+            "IVA febrero 2026: $6.300.000",
+            "PPM marzo 2026: $4.150.000",
+            "Reajustes e intereses: $8.000.000",
+        ],
+        "observaciones": ["Atraso en declaración de renta 2026"],
+    },
 }
 
 EMPRESAS_CMF = {
@@ -99,7 +159,49 @@ EMPRESAS_CMF = {
     "77.987.654-3": {"fiscalizada_cmf": True, "normativa_aplicable": ["NCG 461", "Ley de Sociedades Anónimas"],
                       "sanciones_vigentes": ["Multa 2025 por entrega tardía de EEFF"]},
     "78.555.111-2": {"fiscalizada_cmf": True, "normativa_aplicable": ["NCG 461"], "sanciones_vigentes": []},
+    "79.123.456-8": {"fiscalizada_cmf": False, "normativa_aplicable": [], "sanciones_vigentes": []},
 }
+
+
+def _normalizar_nombre(texto: str) -> str:
+    descompuesto = unicodedata.normalize("NFKD", (texto or "").lower())
+    return "".join(letra for letra in descompuesto if not unicodedata.combining(letra)).strip()
+
+
+@tool
+def buscar_rut_empresa(nombre: str) -> dict | str:
+    """Busca el RUT de una empresa por su razón social o nombre de fantasía (datos simulados).
+
+    Devuelve el RUT, la razón social, el estado de actividad y la deuda tributaria vigente.
+    Si hay varias coincidencias, devuelve la lista para que se elija una. Nunca se debe pedir
+    el RUT a la persona: esta herramienta lo resuelve a partir del nombre.
+    """
+    clave = _normalizar_nombre(nombre)
+    if not clave:
+        return "Necesito la razón social o el nombre de fantasía de la empresa."
+    coincidencias = []
+    for rut, datos in EMPRESAS_SII.items():
+        textos = [_normalizar_nombre(datos["razon_social"]), _normalizar_nombre(datos.get("nombre_fantasia", ""))]
+        if any(texto and (clave in texto or texto in clave) for texto in textos):
+            coincidencias.append(
+                {
+                    "rut": rut,
+                    "razon_social": datos["razon_social"],
+                    "nombre_fantasia": datos.get("nombre_fantasia"),
+                    "estado_actividad": datos["estado_actividad"],
+                    "declaraciones_al_dia": datos["declaraciones_al_dia"],
+                    "deuda_tributaria_clp": datos["deuda_tributaria_clp"],
+                }
+            )
+    if not coincidencias:
+        disponibles = ", ".join(datos["razon_social"] for datos in EMPRESAS_SII.values())
+        return f"No encontré '{nombre}'. Empresas disponibles: {disponibles}."
+    if len(coincidencias) > 1:
+        return {
+            "coincidencias": coincidencias,
+            "mensaje": "Hay varias empresas que coinciden. Indica cuál revisar.",
+        }
+    return coincidencias[0]
 
 
 @tool
@@ -136,6 +238,8 @@ def verificar_cumplimiento_contable(rut_empresa: str) -> dict:
     alertas = []
     if sii and not sii["declaraciones_al_dia"]:
         alertas.append("Declaraciones tributarias atrasadas (SII).")
+    if sii and sii.get("deuda_tributaria_clp"):
+        alertas.append(f"Deuda tributaria vigente: ${sii['deuda_tributaria_clp']:,.0f} CLP.".replace(",", "."))
     if sii:
         alertas.extend(sii["observaciones"])
     if cmf:
@@ -144,6 +248,7 @@ def verificar_cumplimiento_contable(rut_empresa: str) -> dict:
         "rut": rut_empresa,
         "cumple": len(alertas) == 0,
         "alertas": alertas,
+        "deuda_tributaria_clp": sii["deuda_tributaria_clp"] if sii else 0,
         "normativa_aplicable": cmf["normativa_aplicable"] if cmf else [],
     }
 
@@ -200,7 +305,7 @@ def consultar_mis_apuntes(tema: str = "") -> str:
     )
 
 
-HERRAMIENTAS = [consultar_fondo, revisar_cumplimiento_normativo, calcular_ratios_fondo,
-                generar_checklist_auditoria, consultar_sii, consultar_cmf,
+HERRAMIENTAS = [buscar_rut_empresa, listar_fondos, consultar_fondo, revisar_cumplimiento_normativo,
+                calcular_ratios_fondo, generar_checklist_auditoria, consultar_sii, consultar_cmf,
                 verificar_cumplimiento_contable, generar_checklist_cumplimiento_empresa,
                 consultar_mis_apuntes]

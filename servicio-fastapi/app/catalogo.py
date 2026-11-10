@@ -15,13 +15,15 @@ CATALOGO_POR_DEFECTO: dict[str, dict] = {
         "autor": "Carlos Zapata",
         "especialidad": "análisis de acciones e inversiones",
         "descripcion": (
-            "Consulta precios y datos de mercado de acciones de EE.UU. y Chile, "
-            "criterios de inversión, riesgo, diversificación y apuntes del autor."
+            "Consulta precios y datos de mercado de acciones de EE.UU. y Chile, PER, ratio de "
+            "endeudamiento y márgenes, criterios de inversión, riesgo, diversificación y apuntes "
+            "del autor. Deriva las contingencias normativas o tributarias al agente de auditoría."
         ),
         "palabras_clave": [
             "accion", "acciones", "invertir", "inversion", "inversiones", "bolsa",
             "ticker", "precio", "per", "dividendo", "portafolio", "rentabilidad",
-            "riesgo", "diversificacion", "aapl", "msft", "sqm", "falabella", "mercado",
+            "riesgo", "diversificacion", "endeudamiento", "margen", "margenes",
+            "fundamentales", "aapl", "msft", "sqm", "falabella", "mercado",
         ],
     },
     "agente_bryhan": {
@@ -41,13 +43,15 @@ CATALOGO_POR_DEFECTO: dict[str, dict] = {
         "autor": "Alejandra Ubilla",
         "especialidad": "auditoría de cumplimiento normativo y tributario (CMF y SII)",
         "descripcion": (
-            "Audita empresas y fondos: cruza CMF y SII, revisa cumplimiento contable, "
-            "concentración, liquidez, ratios y genera checklists de auditoría."
+            "Audita empresas y fondos: busca el RUT por razón social o nombre de fantasía, revisa "
+            "deuda tributaria, cruza CMF y SII, revisa cumplimiento contable, concentración, "
+            "liquidez, ratios y genera checklists de auditoría."
         ),
         "palabras_clave": [
             "auditoria", "auditar", "cumplimiento", "normativo", "normativa", "tributario",
-            "tributaria", "impuesto", "impuestos", "sii", "cmf", "rut", "fondo", "fondos",
-            "ratios", "liquidez", "concentracion", "contable", "regulacion", "legal",
+            "tributaria", "impuesto", "impuestos", "sii", "cmf", "rut", "razon social",
+            "nombre fantasia", "deuda", "deuda tributaria", "fondo", "fondos", "ratios",
+            "liquidez", "concentracion", "contable", "regulacion", "legal",
         ],
     },
     "agente_soluciones_comerciales_marketing": {

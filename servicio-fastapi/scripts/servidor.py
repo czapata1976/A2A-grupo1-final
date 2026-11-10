@@ -7,11 +7,14 @@ panel informa que el canal no responde.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import shutil
 import subprocess
 import sys
+import threading
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -20,6 +23,72 @@ if str(RAIZ) not in sys.path:
     sys.path.insert(0, str(RAIZ))
 
 logger = logging.getLogger("supervisor")
+
+# Rotación del log: 2 MB por archivo y 3 copias (máximo ~8 MB en disco).
+TAMANO_LOG_BYTES = 2_000_000
+COPIAS_LOG = 3
+
+# Niveles de pino (puente Node) a niveles de Python.
+NIVELES_PINO = {
+    10: logging.DEBUG,
+    20: logging.DEBUG,
+    30: logging.INFO,
+    40: logging.WARNING,
+    50: logging.ERROR,
+    60: logging.CRITICAL,
+}
+
+
+def _bombear_puente(proceso: subprocess.Popen) -> None:
+    """Pasa la salida JSON del puente al log, sin los payloads largos de Baileys."""
+    registro = logging.getLogger("puente")
+    for linea in proceso.stdout or []:
+        texto = linea.rstrip()
+        if not texto:
+            continue
+        try:
+            datos = json.loads(texto)
+        except (TypeError, ValueError):
+            registro.info("%s", texto[:300])
+            continue
+        try:
+            nivel = NIVELES_PINO.get(int(datos.get("level", 30)), logging.INFO)
+        except (TypeError, ValueError):
+            nivel = logging.INFO
+        resumen = str(datos.get("msg", "evento"))
+        codigo = datos.get("code")
+        if codigo is None:
+            nodo = datos.get("fullErrorNode") or {}
+            codigo = (nodo.get("attrs") or {}).get("code")
+        if codigo is not None:
+            resumen = f"{resumen} (code={codigo})"
+        registro.log(nivel, "%s", resumen[:300])
+
+
+def _configurar_registro() -> None:
+    """Consola y archivo con rotación, para que el log no crezca sin límite."""
+    nivel = os.environ.get("LOG_LEVEL", "INFO").upper()
+    formato = logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s")
+    raiz = logging.getLogger()
+    raiz.setLevel(nivel)
+    for manejador in list(raiz.handlers):
+        raiz.removeHandler(manejador)
+    consola = logging.StreamHandler(sys.stdout)
+    consola.setFormatter(formato)
+    raiz.addHandler(consola)
+    carpeta = RAIZ / "logs"
+    carpeta.mkdir(parents=True, exist_ok=True)
+    archivo = RotatingFileHandler(
+        carpeta / "servicio.log",
+        maxBytes=TAMANO_LOG_BYTES,
+        backupCount=COPIAS_LOG,
+        encoding="utf-8",
+    )
+    archivo.setFormatter(formato)
+    raiz.addHandler(archivo)
+    # El cliente HTTP interno del panel es muy ruidoso; solo interesan sus errores.
+    for ruidoso in ("httpx", "httpcore"):
+        logging.getLogger(ruidoso).setLevel(logging.WARNING)
 
 
 def _puerto_interno(url: str) -> int:
@@ -44,11 +113,25 @@ def _arrancar_puente(settings, puerto_publico: int) -> subprocess.Popen | None:
         WHATSAPP_BACKEND_URL=f"http://127.0.0.1:{puerto_publico}/whatsapp/mensaje",
         WHATSAPP_TIMEOUT_MS=str(int((settings.timeout_a2a + 30) * 1000)),
     )
+    entorno.setdefault("WHATSAPP_LOG_LEVEL", "info")
     try:
-        proceso = subprocess.Popen([node, str(script)], cwd=str(RAIZ), env=entorno)
+        proceso = subprocess.Popen(
+            [node, str(script)],
+            cwd=str(RAIZ),
+            env=entorno,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            bufsize=1,
+        )
     except OSError as error:
         logger.warning("No se pudo iniciar el puente de WhatsApp: %s", error)
         return None
+    threading.Thread(
+        target=_bombear_puente, args=(proceso,), daemon=True, name="puente-log"
+    ).start()
     logger.info("Puente de WhatsApp iniciado (pid=%s).", proceso.pid)
     return proceso
 
@@ -65,10 +148,7 @@ def _detener(proceso: subprocess.Popen | None) -> None:
 
 
 def main() -> int:
-    logging.basicConfig(
-        level=os.environ.get("LOG_LEVEL", "INFO").upper(),
-        format="%(asctime)s %(levelname)s %(name)s %(message)s",
-    )
+    _configurar_registro()
 
     from app.config import ConfiguracionInvalida, cargar_settings
 

@@ -57,9 +57,16 @@ def consultar_mis_apuntes(tema: str = "") -> str:
         return "\n".join(
             f"{nombre}: {texto}" for nombre, texto in APUNTES.items()
         )
-    return APUNTES.get(
-        clave,
-        "No tengo ese tema registrado. Consulta conceptos, criterios o caso.",
+    if clave in APUNTES:
+        return APUNTES[clave]
+    # Si el tema no es una clave exacta (por ejemplo "inmobiliario"), se busca en el texto.
+    coincidencias = [texto for texto in APUNTES.values() if clave in texto.lower()]
+    if len(coincidencias) == 1:
+        return coincidencias[0]
+    if coincidencias:
+        return "\n".join(coincidencias)
+    return (
+        "No tengo ese tema registrado. Consulta conceptos, criterios o caso."
     )
 
 

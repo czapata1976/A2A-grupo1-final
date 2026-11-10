@@ -44,6 +44,12 @@ Thumbs.db
 tunel.url
 tunel.pid
 
+# QR de vinculación de WhatsApp (temporal, contiene una credencial de sesión)
+qr_whatsapp.*
+
+# Repos de ejemplo descargados aparte (tienen su propio .git)
+fastapi-langgraph-*/
+
 # Puente WhatsApp: dependencias y credenciales de Baileys
 node_modules/
 .runtime/

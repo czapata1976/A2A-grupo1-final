@@ -4,8 +4,9 @@
 **Taller:** Implementación y ejecución local
 **Grupo:** 1
 **Integrantes:** Alejandra Ubilla, Carlos Monroy, Bryhan Cortes y Carlos Zapata
-**Implementación:** Servicio FastAPI protegido + consola web de chat + canal Telegram
-**Estado:** Funcionando en local; evidencias del recorrido real pendientes de captura con claves de modelo
+**Implementación:** Servicio FastAPI protegido + consola web de chat + canales Telegram y WhatsApp
+**Estado:** Funcionando en local y desplegado en Heroku; agentes A2A expuestos por túnel, WhatsApp
+vinculado y evaluación de calidad **20/20** (2026-11-10)
 
 ## 1. Resumen ejecutivo
 
@@ -16,16 +17,18 @@ persona puede instalar, ejecutar y probar desde el navegador. La opción elegida
    orquestación A2A.
 2. **Canal web de chat** servido por el mismo FastAPI, con frontend propio y panel de traza.
 3. **Canal Telegram** por webhook, que usa el mismo orquestador A2A y devuelve la respuesta al chat.
+4. **Canal WhatsApp** con puente Baileys en loopback y panel de vinculación; comparte el mismo
+   orquestador y los mismos agentes.
 
 El servicio descubre los agentes de LangGraph por `assistants/search` y su Agent Card, les habla por
 JSON-RPC (`message/send`) y devuelve una respuesta visible. Si participan varios agentes, la respuesta
 final contiene el texto íntegro de cada aporte: no se reescriben cifras, unidades ni condiciones.
-Telegram no duplica la lógica: solo es otro punto de entrada al gateway.
+Los canales Telegram y WhatsApp no duplican la lógica: son puntos de entrada al mismo gateway.
 
 La entrega incluye código, `.env.example`, pruebas automatizadas, scripts de arranque y detención,
 guía de evidencias y preparación para un despliegue opcional. Además, `evaluacion/` aporta una
 evaluación automática con **promptfoo**: 20 casos con comprobaciones mecánicas y una rúbrica de
-calidad, con **18/20 aprobadas (90 %)** en la última corrida.
+calidad, con **20/20 aprobadas (100 %)** en la última corrida.
 
 ## 2. Problema y solución
 
@@ -48,16 +51,16 @@ manejo de errores y una respuesta visible.
 
 | Elemento | Origen | Uso en la implementación |
 | --- | --- | --- |
-| `agente_czz` | `mi-agente-cz/` | Acciones, precios, criterios de inversión. |
+| `agente_czz` | `mi-agente-cz/` | Acciones, precios y fundamentales (PER, endeudamiento, márgenes); deriva contingencias a auditoría. |
 | `agente_bryhan` | `agente-bryhan/` | Procesos, datos, IA y planes de trabajo. |
-| `agente_alejandra` | `mi-agente-ale/` | Auditoría CMF/SII, fondos, ratios y checklists. |
+| `agente_alejandra` | `mi-agente-ale/` | Auditoría CMF/SII, búsqueda de RUT por nombre, deuda tributaria, fondos, ratios y checklists. |
 | `agente_soluciones_comerciales_marketing` | `mi-agente-CM/` | Ingeniería comercial y marketing. |
 | Tarjetas y protocolo A2A | Taller A2A | Descubrimiento y `message/send` JSON-RPC. |
-| Prompts, herramientas y grafos | Taller A2A | Sin cambios; se consumen por red. |
-| API, seguridad, orquestador, consola, pruebas | Nuevo | `servicio-fastapi/`. |
+| Prompts, herramientas y grafos | Taller A2A | Reutilizados; en esta iteración se agregaron herramientas y reglas a `agente_czz` y `agente_alejandra`. |
+| API, seguridad, orquestador, consola, canales y pruebas | Nuevo | `servicio-fastapi/`. |
 
-No se modificó la lógica interna de los agentes. El gateway se acopla por el protocolo A2A y por la
-configuración de puertos.
+El gateway se acopla por el protocolo A2A y por la configuración de puertos. En esta iteración se
+ampliaron las herramientas y los prompts de dos agentes, sin cambiar su contrato A2A.
 
 ## 4. Arquitectura
 
@@ -79,9 +82,11 @@ Componentes nuevos:
 | `app/orquestador.py` | Modos individual/paralelo/colaborativo, sesiones y consolidación. |
 | `app/sesiones.py` | `contextId` por agente y sesión, con TTL y tope. |
 | `app/auditoria.py` | JSONL con hashes y metadatos, sin texto ni secretos. |
-| `app/static/` | Consola web (HTML, CSS y JavaScript sin dependencias). |
-| `tests/` | 52 pruebas unitarias/de contrato y 1 integración opcional. |
-| `scripts/` | Arranque, detención y prueba HTTP con acta. |
+| `app/static/` | Consola web (HTML, CSS y JavaScript sin dependencias) con 5 ejemplos predefinidos. |
+| `app/whatsapp.py` y `app/cliente_whatsapp.py` | Panel de vinculación y cliente del puente Baileys. |
+| `whatsapp/` | Puente Node/Baileys en loopback (texto del chat propio). |
+| `tests/` | 64 pruebas unitarias/de contrato y 1 integración opcional. |
+| `scripts/` | Arranque, detención, prueba HTTP, túneles de agentes y webhook de Telegram. |
 
 ### Flujo de una consulta
 
@@ -131,10 +136,10 @@ cd servicio-fastapi
 .venv\Scripts\python.exe -m pytest -q
 ```
 
-Resultado en este equipo (2026-11-06):
+Resultado en este equipo (2026-11-10):
 
 ```text
-52 passed, 1 skipped
+64 passed, 1 skipped
 ```
 
 La prueba omitida es la integración real (`tests/test_integracion_a2a.py`), que requiere servidores
@@ -161,7 +166,8 @@ Cobertura de la suite:
 - detección de dato faltante;
 - frontend, cabeceras y assets;
 - cliente A2A con JSON-RPC, error y timeout simulados;
-- webhook de Telegram: secreto, ayuda, selección automática, agente explícito y modo paralelo.
+- webhook de Telegram: secreto, ayuda, selección automática, agente explícito y modo paralelo;
+- canal WhatsApp: secreto del puente, panel, estados de vinculación y errores del puente.
 
 ### 6.2 Arranque real verificado
 
@@ -196,15 +202,18 @@ agente con modelo.
   A2A y la respuesta consolidada llegó al receptor. Esta prueba valida la integración de los canales,
   no la respuesta de los modelos reales.
 
-### 6.4 Pendiente de ejecución del grupo
+### 6.4 Evidencias y pendientes
 
-Con las claves de Gemini configuradas y los agentes levantados:
+Ya verificado en este equipo: consultas reales a los cuatro agentes, recorrido completo por la consola
+web, canales Telegram y WhatsApp, descubrimiento de los cuatro agentes desde Heroku y evaluación
+automática con promptfoo (20/20).
 
-1. ejecutar `scripts/probar_api.py`;
+Pendiente solo de captura formal:
+
+1. ejecutar `scripts/probar_api.py` y guardar el acta;
 2. ejecutar `scripts/capturar_evidencias.py` (Playwright) para generar las capturas de acceso,
    consulta individual, multiagente, dato faltante y traza;
-3. configurar el bot de Telegram y registrar el webhook con `scripts/set_webhook.py`; capturar una
-   conversación real en Telegram;
+3. capturar una conversación real en Telegram y otra en WhatsApp;
 4. capturar manualmente un fallo controlado (detener un agente) si se quiere evidenciar ese caso;
 5. revisar las imágenes y ocultar cualquier dato sensible;
 6. guardar todo en `servicio-fastapi/evidencias/capturas/`.
@@ -230,36 +239,56 @@ promptfoo eval --output resultados.json
 promptfoo view              # http://localhost:15500
 ```
 
-Resultado de la corrida `eval-zTV` (2026-11-09T00:24:12Z): **18/20 aprobadas (90 %)**, sin errores
-de ejecución.
+**Resultado final — corrida `eval-Ozb` (2026-11-10T21:59:49Z): 20/20 aprobadas (100 %), sin errores
+de ejecución.**
 
 | Agente | Casos | Latencia media | Mínima | Máxima |
 | --- | --- | --- | --- | --- |
-| `agente_czz` | 5/5 | 14,8 s | 5,7 s | 21,6 s |
-| `agente_bryhan` | 5/5 | 25,2 s | 21,1 s | 28,3 s |
-| `agente_alejandra` | 4/5 | 19,0 s | 15,5 s | 24,9 s |
-| `agente_soluciones_comerciales_marketing` | 4/5 | 16,9 s | 15,3 s | 18,4 s |
+| `agente_czz` | 5/5 | 17,8 s | 5,6 s | 25,7 s |
+| `agente_bryhan` | 5/5 | 28,6 s | 25,7 s | 31,3 s |
+| `agente_alejandra` | 5/5 | 23,5 s | 20,9 s | 29,5 s |
+| `agente_soluciones_comerciales_marketing` | 5/5 | 19,7 s | 18,5 s | 20,7 s |
 
-La rúbrica de calidad pasó en **20/20** casos (score 1,0): las dos fallas son de *contenido
-esperado*, no de trato ni de corrección.
+La rúbrica de calidad pasó en **20/20** casos (score 1,0): trato cordial y respuestas apoyadas en las
+herramientas.
 
-**Fallos y causa raíz** (hallazgos reales del agente, no errores del evaluador):
+**Hallazgos de la evaluación y correcciones aplicadas**
 
-| Caso | Aserción | Causa |
-| --- | --- | --- |
-| `agente_alejandra` · 1/5 — fondo más concentrado | espera «Inmobiliario» | No existe una herramienta para listar fondos; el agente pasa texto libre a `consultar_mis_apuntes`, que solo acepta `conceptos`, `criterios` o `caso`. |
-| `agente_soluciones_comerciales_marketing` · 5/5 — resultados del caso ficticio | espera «ficticio» | Mismo patrón: tema libre contra una herramienta de claves cerradas. |
+| Hallazgo | Corrección |
+| --- | --- |
+| `agente_alejandra` no podía enumerar fondos y pedía nombres | Nueva herramienta `listar_fondos` con tipo, concentración, rentabilidad y cumplimiento NCG 365. |
+| `agente_soluciones_comerciales_marketing` no resolvía temas libres en sus apuntes | `consultar_mis_apuntes` busca por contenido cuando la clave no es exacta. |
+| `agente_czz` narraba «procedo a consultar» y terminaba sin llamar herramientas | Regla explícita «ejecuta, no anuncies» y una llamada por ticker. |
+| Aserciones demasiado literales en las pruebas 18-20 | `icontains-any` con sinónimos (seguimiento/calificación/contacto; criterio/propósito/control; ficticio/hipotético/ilustrativo). |
+| El modelo calificador marcaba 2026 como fecha inválida | La rúbrica declara el contexto temporal del taller (2026-11-10, datos simulados). |
 
 El detalle paso a paso se obtiene con `--saltos`, que imprime cada nodo del grafo, la herramienta
 llamada con sus argumentos, lo que devolvió y la respuesta final:
 
 ```powershell
 python evaluacion\agente.py --agente agente_alejandra `
-  --pregunta "¿Qué fondo de los que revisas tiene la mayor concentración en un solo emisor?" --saltos
+  --pregunta "Revisa si Comercial Andina Ltda tiene deuda tributaria pendiente" --saltos
+python evaluacion\agente.py --agente agente_czz --diagrama
 ```
 
-Esto permite distinguir si el agente no llamó la herramienta, la llamó con argumentos equivocados,
-si la herramienta respondió bien y el modelo redactó mal, o si la aserción era demasiado literal.
+### 6.6 Canales y despliegue verificados
+
+| Canal | Estado | Verificación |
+| --- | --- | --- |
+| Consola web local | ✅ | `GET /` 200; 4 agentes con `disponible: true`; consulta individual y multiagente |
+| Consola web en Heroku | ✅ | `A2A_SERVIDORES` con cuatro túneles; `/v1/agentes` 4/4; consulta real a `agente_czz` en 4,9 s |
+| Telegram | ✅ | Webhook apuntando al servicio, `pending_update_count: 0`, sin `last_error_message` |
+| WhatsApp | ✅ | Vinculado con código de 8 dígitos; `estado: connected`; mensaje real respondido en 5,3 s |
+
+Notas de operación:
+
+- `scripts/tuneles_agentes.py` abre un túnel por agente (2025-2028), verifica el grafo y actualiza
+  `A2A_SERVIDORES` en Heroku con `--heroku a2agrupo1`. Las URLs de túnel rápido cambian al reiniciar.
+- El canal WhatsApp procesa los mensajes **enviados desde la propia cuenta** (chat «Mensaje para ti»).
+  WhatsApp entrega esos mensajes como `append` y el puente acepta `notify` y `append`.
+- El log del servicio rota cada 2 MB con 3 copias (`logs/servicio.log`) y no registra el sondeo del panel.
+- La consola muestra **5 ejemplos predefinidos** que preseleccionan agente y modo; el ejemplo
+  «Consulta multiagente» quedó corregido ortográficamente.
 
 ## 7. Preparación manual
 
@@ -271,6 +300,8 @@ si la herramienta respondió bien y el modelo redactó mal, o si la aserción er
 | `.env` de agentes | Copiar cada `.env.example` y pegar la clave correspondiente. |
 | `.env` del gateway | Generado por `scripts/iniciar.ps1` o copiado desde `.env.example`; cambiar `API_KEYS`. |
 | Telegram | Crear un bot con @BotFather, guardar `TELEGRAM_TOKEN` y definir `TELEGRAM_SECRET`. |
+| WhatsApp | Node 22+, `WHATSAPP_HABILITADO=true`, `WHATSAPP_SECRET` largo y vinculación por QR o código de 8 dígitos. |
+| Túneles de agentes | `cloudflared` instalado; `scripts/tuneles_agentes.py --heroku a2agrupo1` abre y actualiza las URLs. |
 | Túnel HTTPS | Para probar el webhook local con Telegram, por ejemplo `cloudflared tunnel --url http://localhost:8000`. |
 | Evaluador | Recibe la clave por un canal privado; no está en el repositorio. |
 | promptfoo | `npm install -g promptfoo` (0.125.1) y `evaluacion/.env` con la clave del modelo calificador. |
@@ -301,16 +332,23 @@ comunitario no oficial (Baileys). No se requieren cuentas de Gmail.
 - Al reiniciar un agente se pierden sus hilos en memoria.
 - El canal Telegram necesita HTTPS, token de BotFather y el mismo secreto al registrar el webhook.
   No hay deduplicación de updates y el procesamiento es en memoria.
-- `consultar_mis_apuntes` acepta solo claves cerradas (`conceptos`, `criterios`, `caso`); una consulta
-  de tema libre puede fallar aunque la respuesta redactada sea razonable. La evaluación lo detecta y
-  queda registrado como los dos casos fallidos (18/20).
+- `consultar_mis_apuntes` resuelve claves exactas y, si no, busca por contenido; aun así un tema muy
+  ambiguo puede requerir precisión. La evaluación ya no registra ese caso como fallo.
+- Los túneles rápidos de Cloudflare cambian de URL en cada reinicio: hay que volver a ejecutar
+  `scripts/tuneles_agentes.py --heroku a2agrupo1` y confirmar con `GET /v1/agentes`.
+- WhatsApp usa un conector comunitario no oficial (Baileys) y solo atiende el chat propio; si WhatsApp
+  invalida la sesión hay que revincular con QR o código.
+- El despliegue en Heroku ejecuta el gateway, pero no los agentes ni el puente de WhatsApp: esos corren
+  en el equipo local y se exponen por túnel.
 
 ## 10. Conclusión
 
 La implementación conecta el trabajo A2A del grupo con una forma de uso real, protegida y reproducible.
 El valor principal no es solo la interfaz: el gateway demuestra el recorrido completo, conserva la
 fidelidad de las respuestas y deja evidencia de qué agente respondió, cuánto tardó y con qué contexto.
-La consola web y Telegram usan el mismo orquestador; no hay agentes ni respuestas duplicadas. La
-evaluación con promptfoo cierra el circuito de calidad: 20 casos, tres comprobaciones por caso y una
-rúbrica externa, con 18/20 aprobadas y dos hallazgos concretos que quedan documentados.
-Las capturas del recorrido con modelos reales quedan como el paso final de evidencia del grupo.
+La consola web, Telegram y WhatsApp usan el mismo orquestador; no hay agentes ni respuestas duplicadas.
+La iteración final amplió las capacidades de los agentes (fundamentales y derivación a auditoría en
+`agente_czz`; búsqueda de RUT por nombre, deuda tributaria y listado de fondos en `agente_alejandra`)
+y alineó la consola con cinco ejemplos de uso. La evaluación con promptfoo cierra el circuito de
+calidad: 20 casos, tres comprobaciones por caso y una rúbrica externa, con **20/20 aprobadas (100 %)**.
+Las capturas formales del recorrido quedan como el último paso de evidencia del grupo.

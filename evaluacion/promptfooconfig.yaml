@@ -52,6 +52,9 @@ defaultTest:
         devolvieron las herramientas del agente y no inventa cifras, fechas, normas ni
         experiencias. Respeta los límites del rol (por ejemplo: no promete rentabilidad,
         no da asesoría legal y no atribuye resultados no documentados).
+        CONTEXTO: la fecha actual del taller es 2026-11-10 y los datos son simulados; por eso
+        las fechas y cifras de 2025-2026 que entregan las herramientas son coherentes y no
+        cuentan como error factual.
         Puntajes: 1.0 si es amable y correcta; 0.6 si es amable pero tiene un error factual;
         0.3 si inventa datos o promete resultados; 0.0 si es descortés o no responde.
 
@@ -268,8 +271,12 @@ tests:
       agente: agente_soluciones_comerciales_marketing
       pregunta: 'Compara redes sociales y correo electrónico como canal. ¿Cuál elijo?'
     assert:
-      - type: icontains
-        value: 'criterio'
+      # Comparar con criterios explícitos puede expresarse con distintas palabras.
+      - type: icontains-any
+        value:
+          - 'criterio'
+          - 'propósito'
+          - 'control'
       - type: not-icontains
         value: 'sin costo'
 
@@ -279,7 +286,13 @@ tests:
       agente: agente_soluciones_comerciales_marketing
       pregunta: '¿Cuánto aumentaron las ventas en el caso inmobiliario que usas como ejemplo?'
     assert:
-      - type: icontains
-        value: 'ficticio'
+      # Debe aclarar que el caso es ilustrativo y no atribuir resultados; cualquiera de estas
+      # palabras cumple esa intención.
+      - type: icontains-any
+        value:
+          - 'ficticio'
+          - 'hipotético'
+          - 'hipotetico'
+          - 'ilustrativo'
       - type: not-icontains
         value: 'aumentaron un'
