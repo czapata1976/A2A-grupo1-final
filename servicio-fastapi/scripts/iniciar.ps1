@@ -95,6 +95,23 @@ if (-not $puertoExplicito -and $valoresEnv["SERVICIO_PORT"]) {
 Write-Host ""
 Write-Host "Servicio: http://${Direccion}:$Puerto" -ForegroundColor Green
 Write-Host "Docs:     http://${Direccion}:$Puerto/docs" -ForegroundColor Green
+
+$whatsappActivo = $false
+if ($valoresEnv.ContainsKey("WHATSAPP_HABILITADO")) {
+    $valorWhatsapp = $valoresEnv["WHATSAPP_HABILITADO"].ToLowerInvariant()
+    $whatsappActivo = $valorWhatsapp -in @("1", "true", "si", "sí", "yes", "on")
+}
+
+if ($whatsappActivo -and -not $Recargar) {
+    Write-Host "WhatsApp: http://${Direccion}:$Puerto/whatsapp (puente Node en loopback)" -ForegroundColor Green
+    Write-Host "Detén con Ctrl+C." -ForegroundColor DarkGray
+    Write-Host ""
+    $env:SERVICIO_HOST = $Direccion
+    $env:SERVICIO_PORT = "$Puerto"
+    & $pythonVenv (Join-Path $raiz "scripts\servidor.py")
+    exit $LASTEXITCODE
+}
+
 Write-Host "Detén con Ctrl+C." -ForegroundColor DarkGray
 Write-Host ""
 

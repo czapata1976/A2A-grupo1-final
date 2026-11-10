@@ -14,6 +14,9 @@ implementación local. La evaluación principal es local; no se declara el servi
 | Servidores LangGraph | `127.0.0.1:2025-2028` | Acceso directo sin autenticación |
 | Token de Telegram | `.env` del servicio | Suplantación del bot y envío de mensajes |
 | Secreto del webhook | `.env` del servicio | Updates falsos hacia el webhook |
+| `WHATSAPP_SECRET` | `.env` del servicio y entorno del puente | Vinculación o envío no autorizado |
+| Credenciales de WhatsApp (Baileys) | `whatsapp/.runtime/whatsapp-auth` (ignorado por Git) | Suplantación de la cuenta vinculada |
+| Código de vinculación | RAM del puente, respuesta autenticada | Vinculación de un tercero |
 
 ## 2. Controles implementados
 
@@ -111,7 +114,28 @@ correlacionar con el registro.
   almacén de sesiones.
 - Telegram exige una URL HTTPS; en local se usa un túnel temporal y se cierra al terminar.
 
-### 2.9 Aislamiento de la colaboración A2A
+### 2.9 Canal WhatsApp
+
+- El puente Node/Baileys escucha **solo en `127.0.0.1:18081`**; no se publica por el router de la
+  plataforma.
+- Cada llamada del servicio al puente exige `X-WhatsApp-Secret`, comparado con
+  `timingSafeEqual` en Node y con `secrets.compare_digest` en Python.
+- El panel `/whatsapp` y todas sus acciones exigen `API_KEYS` (`X-API-Key`). El HTML del panel no
+  contiene datos: solo se sirve la página vacía.
+- El código de vinculación se guarda solo en RAM, se devuelve únicamente en una respuesta autenticada
+  y se borra al vencer (120 s), al desconectar o al cambiar de socket.
+- Solo se aceptan mensajes **de texto** enviados por la propia cuenta a su propio chat
+  (`fromMe=true`, `remoteJid` igual a la identidad vinculada). Se descartan grupos, difusión, audio,
+  imágenes, historial y contactos.
+- Los mensajes se deduplican con un registro en RAM (`in:`/`out:`), que se rechaza al llenarse en
+  lugar de expulsar acciones inciertas.
+- El proceso Node no escribe cuerpos de mensajes ni códigos en sus registros.
+- Las credenciales de Baileys se guardan en `whatsapp/.runtime/whatsapp-auth` con permisos
+  restringidos, fuera de Git y del árbol publicado.
+- En un resultado incierto no se solicita otro código automáticamente: el operador debe revisar el
+  celular, desconectar e iniciar un intento nuevo.
+
+### 2.10 Aislamiento de la colaboración A2A
 
 - En modo colaborativo, los aportes previos se envían en el **mensaje de usuario**, envueltos en
   `<aporte agente="...">...</aporte>`.
@@ -172,6 +196,14 @@ de la clave.
 12. **Token y secreto de Telegram.** Quien obtenga `TELEGRAM_TOKEN` puede enviar mensajes como el bot;
     quien obtenga `TELEGRAM_SECRET` puede intentar updates falsos. Trátalos como credenciales y
     rótalos si se filtran.
+13. **Canal WhatsApp no oficial.** Baileys no es la API de Meta. Vincular una cuenta puede infringir
+    los términos de WhatsApp y exponerla a bloqueos o cierres. Quien obtenga `WHATSAPP_SECRET` puede
+    interactuar con el puente si además alcanza el loopback del dyno; quien obtenga `API_KEYS` puede
+    iniciar una vinculación. Usa un celular dedicado, rota ambos secretos y no compartas capturas con
+    el número o el código.
+14. **Estado efímero de WhatsApp.** El disco de Heroku es efímero y el registro de deduplicación vive
+    en RAM: un deploy puede exigir nueva vinculación y repetir un mensaje no confirmado. No hay
+    reintento automático de envíos inciertos.
 
 ## 5. Lista de verificación antes de publicar
 
@@ -179,6 +211,9 @@ de la clave.
 - [ ] `.env`, `.venv`, `logs/` y `__pycache__/` están fuera de la entrega.
 - [ ] `DOCS_HABILITADOS=false` si el servicio no es solo local.
 - [ ] `TELEGRAM_TOKEN` y `TELEGRAM_SECRET` son privados, están fuera del repositorio y se rotan si se filtran.
+- [ ] `WHATSAPP_SECRET` es aleatorio, tiene 16+ caracteres y no está en el repositorio.
+- [ ] `whatsapp/.runtime/` y `node_modules/` están fuera de Git y del slug publicado.
+- [ ] La cuenta de WhatsApp vinculada es dedicada y el operador acepta el riesgo del conector no oficial.
 - [ ] El webhook de Telegram usa HTTPS y el mismo `TELEGRAM_SECRET` configurado en `set_webhook.py`.
 - [ ] `CORS_ORIGINS` contiene solo orígenes necesarios.
 - [ ] Los servidores de agentes están en red privada o detrás de autenticación.

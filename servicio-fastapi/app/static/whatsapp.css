@@ -1,0 +1,93 @@
+.wa {
+  width: min(920px, 100%);
+  margin: 0 auto;
+  padding: clamp(18px, 3vw, 34px) clamp(16px, 3vw, 34px) 60px;
+}
+
+.wa-tarjeta {
+  background: var(--panel);
+  border: 1px solid var(--panel-borde);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  padding: clamp(18px, 3vw, 30px);
+  display: grid;
+  gap: 20px;
+}
+
+.wa-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.wa-fila h2 {
+  margin: 0 0 6px;
+  font-size: 1.2rem;
+}
+
+.wa-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.wa-vinculo {
+  border: 1px solid var(--panel-borde);
+  border-radius: var(--radio-chico);
+  padding: 18px;
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.wa-vinculo legend {
+  padding: 0 8px;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+}
+
+.wa-modos {
+  display: flex;
+  gap: 8px;
+}
+
+.wa-modos .boton-mini[data-activo="true"] {
+  border-color: var(--acento);
+  color: var(--acento);
+}
+
+.wa-codigo {
+  border: 1px dashed var(--acento);
+  border-radius: var(--radio-chico);
+  padding: 16px;
+  background: rgba(85, 224, 194, 0.06);
+}
+
+.wa-codigo h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.wa-codigo-valor {
+  margin: 0 0 10px;
+  font-family: var(--mono);
+  font-size: 2rem;
+  letter-spacing: 0.18em;
+  color: var(--acento);
+}
+
+.wa-qr {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  text-align: center;
+}
+
+.wa-qr img {
+  width: min(280px, 80vw);
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px;
+}

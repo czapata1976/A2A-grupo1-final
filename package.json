@@ -1,0 +1,19 @@
+{
+  "name": "a2a-grupo1-final",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Puente WhatsApp (Baileys) del servicio FastAPI de agentes A2A",
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "whatsapp:start": "node servicio-fastapi/whatsapp/src/main.mjs",
+    "whatsapp:test": "node --test --test-concurrency=1 servicio-fastapi/whatsapp/test/*.test.mjs"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "7.0.0-rc14",
+    "pino": "10.1.0",
+    "qrcode": "1.5.4"
+  }
+}

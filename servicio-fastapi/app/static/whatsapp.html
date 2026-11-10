@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Canal WhatsApp · Agentes A2A</title>
+  <link rel="stylesheet" href="/static/styles.css?v=1.2.0">
+  <link rel="stylesheet" href="/static/whatsapp.css?v=1.0.0">
+</head>
+<body>
+  <div class="fondo" aria-hidden="true"></div>
+
+  <header class="cabecera">
+    <div class="marca">
+      <div class="logo" aria-hidden="true">WA</div>
+      <div>
+        <h1>Canal WhatsApp</h1>
+        <p>Baileys + orquestador A2A · vinculación del operador</p>
+      </div>
+    </div>
+    <div class="estado">
+      <span id="indicador" class="punto punto-espera" aria-hidden="true"></span>
+      <span id="estado-texto">Bloqueado</span>
+      <a class="boton-fantasma" href="/">Volver a la consola</a>
+    </div>
+  </header>
+
+  <main>
+    <section id="panel-acceso" class="panel-acceso" aria-labelledby="titulo-acceso">
+      <div class="tarjeta-acceso">
+        <span class="etiqueta">Acceso protegido</span>
+        <h2 id="titulo-acceso">Desbloquea el panel</h2>
+        <p class="texto-suave">
+          Ingresa la clave del servicio. Se usa solo en esta pestaña, viaja en la cabecera
+          <code>X-API-Key</code> y nunca se guarda en el repositorio.
+        </p>
+        <form id="form-acceso">
+          <label for="clave">Clave API</label>
+          <div class="campo-clave">
+            <input id="clave" type="password" autocomplete="current-password" spellcheck="false"
+                   placeholder="Mínimo 12 caracteres" required>
+            <button id="btn-ver" type="button" class="boton-icono" aria-label="Mostrar clave">Ver</button>
+          </div>
+          <button type="submit" class="boton-primario">Desbloquear</button>
+          <p id="error-acceso" class="mensaje-error" role="alert" hidden></p>
+        </form>
+        <p class="nota">
+          Un celular por aplicación. Baileys es un conector no oficial: revisa los términos de
+          WhatsApp y el riesgo de bloqueo antes de vincular tu cuenta.
+        </p>
+      </div>
+    </section>
+
+    <section id="panel-wa" class="wa" hidden>
+      <div class="wa-tarjeta">
+        <div class="wa-fila">
+          <div>
+            <h2>Estado de la vinculación</h2>
+            <p id="wa-detalle" class="texto-suave">Consultando estado…</p>
+          </div>
+          <div class="wa-acciones">
+            <button id="btn-conectar" class="boton-primario" type="button">Iniciar vinculación</button>
+            <button id="btn-desconectar" class="boton-secundario" type="button">Desconectar</button>
+          </div>
+        </div>
+
+        <fieldset id="wa-vinculo" class="wa-vinculo" hidden>
+          <legend>Método de vinculación</legend>
+          <div class="wa-modos">
+            <button id="btn-modo-codigo" class="boton-mini" type="button">Usar código</button>
+            <button id="btn-modo-qr" class="boton-mini" type="button">Usar QR</button>
+          </div>
+
+          <form id="form-telefono" autocomplete="off">
+            <label for="telefono">
+              Tu número con código de país, solo dígitos, sin + ni espacios
+            </label>
+            <div class="campo-clave">
+              <input id="telefono" name="telefono" type="tel" inputmode="numeric"
+                     autocomplete="off" pattern="[1-9][0-9]{6,14}" minlength="7" maxlength="15" required>
+              <button id="btn-codigo" type="submit" class="boton-primario">Obtener código</button>
+            </div>
+          </form>
+
+          <div id="caja-codigo" class="wa-codigo" hidden>
+            <h3>Código generado, vinculación pendiente</h3>
+            <p id="codigo-valor" class="wa-codigo-valor"></p>
+            <p class="texto-suave">
+              En tu celular: Dispositivos vinculados → Vincular un dispositivo →
+              Vincular con número de teléfono. Ingresa el código mostrado aquí.
+              No es un SMS. No lo compartas ni lo publiques.
+            </p>
+          </div>
+
+          <div id="caja-qr" class="wa-qr" hidden>
+            <p class="texto-suave">
+              Escanea este QR desde WhatsApp → Dispositivos vinculados → Vincular un dispositivo.
+            </p>
+            <img id="qr-imagen" alt="QR privado para vincular tu cuenta de WhatsApp">
+          </div>
+        </fieldset>
+
+        <p id="wa-aviso" class="nota" role="status"></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/whatsapp.js?v=1.0.0" type="module"></script>
+</body>
+</html>

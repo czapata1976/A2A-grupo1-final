@@ -43,3 +43,8 @@ Thumbs.db
 # Túnel de Cloudflare: la URL es temporal
 tunel.url
 tunel.pid
+
+# Puente WhatsApp: dependencias y credenciales de Baileys
+node_modules/
+.runtime/
+npm-debug.log*

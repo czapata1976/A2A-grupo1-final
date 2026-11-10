@@ -275,14 +275,15 @@ si la herramienta respondió bien y el modelo redactó mal, o si la aserción er
 | Evaluador | Recibe la clave por un canal privado; no está en el repositorio. |
 | promptfoo | `npm install -g promptfoo` (0.125.1) y `evaluacion/.env` con la clave del modelo calificador. |
 
-Se requiere un bot de Telegram y un túnel HTTPS para el canal Telegram; no se requieren cuentas de
-Gmail ni WhatsApp.
+Se requiere un bot de Telegram y un túnel HTTPS para el canal Telegram. El canal WhatsApp es
+opcional: requiere Node 22+, `WHATSAPP_HABILITADO=true` y `WHATSAPP_SECRET`, y usa un conector
+comunitario no oficial (Baileys). No se requieren cuentas de Gmail.
 
 ## 8. Preparación para despliegue
 
 - `Dockerfile` y `Procfile` listos para un contenedor o una plataforma tipo Heroku.
-- `PORT`, `API_KEYS`, `A2A_SERVIDORES`, `TELEGRAM_TOKEN`, `TELEGRAM_SECRET`, `DOCS_HABILITADOS` y
-  `CORS_ORIGINS` se configuran por entorno.
+- `PORT`, `API_KEYS`, `A2A_SERVIDORES`, `TELEGRAM_TOKEN`, `TELEGRAM_SECRET`, `WHATSAPP_HABILITADO`,
+  `WHATSAPP_SECRET`, `DOCS_HABILITADOS` y `CORS_ORIGINS` se configuran por entorno.
 - En local con Docker, los agentes del host se alcanzan con `host.docker.internal`.
 - Para publicar de verdad hay que desplegar también los agentes o exponerlos de forma segura. El token
   del gateway no protege los endpoints directos de `langgraph dev`.

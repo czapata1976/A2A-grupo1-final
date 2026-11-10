@@ -2,27 +2,29 @@
 
 Implementación del **Taller de Implementación** del Certificado Agentic AI (UAI).
 Reutiliza los cuatro agentes construidos en el Taller A2A y los expone con una API protegida, una
-consola web de chat y un canal Telegram por webhook.
+consola web de chat, un canal Telegram por webhook y un canal WhatsApp por medio de un puente
+Baileys local.
 
 ## 1. Opción elegida
 
 | Punto | Decisión |
 | --- | --- |
 | **Opción 1** | **Servicio FastAPI** con acceso protegido por token, límite de peticiones y trazas A2A. |
-| **Opción 2** | **Canal web de chat** con frontend propio y **canal Telegram** por webhook, ambos servidos por el mismo FastAPI. |
+| **Opción 2** | **Canal web de chat** con frontend propio, **canal Telegram** por webhook y **canal WhatsApp** por puente Baileys; los tres comparten el mismo FastAPI y el mismo orquestador A2A. |
 | **Problema que resuelve** | Una persona puede consultar desde el navegador o desde Telegram; el servicio elige uno o varios agentes A2A, conserva sus respuestas íntegras y devuelve una conclusión visible con evidencia de qué agente respondió. |
 | **Qué se reutiliza** | Los cuatro agentes del Taller A2A: `agente_czz`, `agente_bryhan`, `agente_alejandra` y `agente_soluciones_comerciales_marketing`, con sus prompts, herramientas, grafos y servidores LangGraph. |
 | **Qué es nuevo** | `servicio-fastapi/`: API, seguridad, orquestador, cliente A2A JSON-RPC, consola web, canal Telegram, pruebas y documentación. |
-| **Qué no se hace** | No se construyen Gmail, WhatsApp ni avatar. Tampoco se ejecutan pagos, compras o acciones externas. |
+| **Qué no se hace** | No se construyen Gmail ni avatar. Tampoco se ejecutan pagos, compras o acciones externas. El canal WhatsApp usa un conector comunitario **no oficial** (Baileys), no la API oficial de Meta. |
 
 ## 2. Arquitectura
 
 ```text
-Navegador ──► POST /v1/consultas + X-API-Key ──┐
-Telegram  ──► POST /telegram/webhook + secreto ─┤
-                                                ▼
+Navegador ──► POST /v1/consultas + X-API-Key ──────────────────┐
+Telegram  ──► POST /telegram/webhook + secreto ────────────────┤
+WhatsApp  ──► Baileys (Node, loopback) ──► POST /whatsapp/mensaje + secreto ─┤
+                                                               ▼
                               FastAPI (servicio-fastapi)
-                                ├─ autenticación por token / secreto Telegram
+                                ├─ autenticación por token / secretos de canal
                                 ├─ catálogo y selección de agentes
                                 ├─ sesión: contextId A2A por agente (memoria)
                                 ├─ cliente A2A JSON-RPC (sin a2a-sdk)
@@ -34,23 +36,34 @@ Telegram  ──► POST /telegram/webhook + secreto ─┤
                                       └─► http://127.0.0.1:2028  agente_soluciones_comerciales_marketing
 ```
 
+El puente de WhatsApp escucha **solo en `127.0.0.1:18081`** y exige `WHATSAPP_SECRET`. La única
+superficie pública del canal es el panel `/whatsapp` del propio FastAPI, protegido con `API_KEYS`.
+
+> Baileys es un conector comunitario no oficial. Revisa los términos de WhatsApp y el riesgo de
+> bloqueo antes de vincular una cuenta; usa un celular dedicado y un solo conector activo.
+
 ```mermaid
 sequenceDiagram
     participant P as Persona
     participant W as Consola web
     participant T as Telegram
+    participant Q as WhatsApp (Baileys)
     participant F as FastAPI
     participant A as Servidor LangGraph A2A
     P->>W: escribe consulta
     W->>F: POST /v1/consultas + X-API-Key
     P->>T: escribe mensaje
     T->>F: POST /telegram/webhook + secreto
+    P->>Q: escribe en «Mensaje para ti»
+    Q->>F: POST /whatsapp/mensaje + X-WhatsApp-Secret
     F->>F: valida token/secreto, límite y sesión
     F->>A: GET /assistants/search y Agent Card
     F->>A: POST /a2a/<assistant_id> message/send
     A-->>F: texto del agente y contextId
     F-->>W: respuesta consolidada + aportes + traza
     F-->>T: sendMessage con la respuesta
+    F-->>Q: texto consolidado
+    Q-->>P: respuesta en WhatsApp
     W-->>P: respuesta visible y evidencia A2A
     T-->>P: respuesta en Telegram
 ```
@@ -86,13 +99,17 @@ entornos de los agentes: cada uno tiene su propio `requirements.txt`.
 | `agente_alejandra` | `GOOGLE_API_KEY` | `mi-agente-ale/.env` |
 | `agente_soluciones_comerciales_marketing` | `GOOGLE_API_KEY` | `mi-agente-CM/.env` |
 | Canal Telegram | `TELEGRAM_TOKEN` (BotFather) y `TELEGRAM_SECRET` | `servicio-fastapi/.env` |
+| Canal WhatsApp | `WHATSAPP_SECRET` y Node 22+ | `servicio-fastapi/.env` y `package.json` |
 
 - La clave `API_KEYS` es un **token de acceso al servicio**, no una clave de modelo. Se puede inventar
   una cadena larga; el servicio la compara en el servidor.
 - Las claves de modelo viven solo en el `.env` de cada agente y **nunca** pasan por el navegador.
 - Ningún `.env` se incluye en la entrega. Cada carpeta trae `.env.example`.
-- Para Telegram se necesita un bot de BotFather y un túnel HTTPS; no se requieren cuentas de Gmail ni
-  WhatsApp. El token y el secreto del webhook viven solo en el `.env` del servicio.
+- Para Telegram se necesita un bot de BotFather y un túnel HTTPS; no se requieren cuentas de Gmail.
+  El token y el secreto del webhook viven solo en el `.env` del servicio.
+- Para WhatsApp se necesita **Node 22 o superior** y las dependencias del `package.json` de la raíz.
+  La vinculación se hace desde `/whatsapp` con el celular del operador; no se usan cuentas de Gmail
+  ni la API oficial de Meta.
 
 ### Puertos
 
@@ -103,6 +120,7 @@ entornos de los agentes: cada uno tiene su propio `requirements.txt`.
 | `agente_bryhan` | `2026` |
 | `agente_alejandra` | `2027` (puede usar 2025 si corre solo) |
 | `agente_soluciones_comerciales_marketing` | `2028` (puede usar 2025 si corre solo) |
+| Puente WhatsApp (solo loopback) | `18081` |
 
 Los puertos son configurables. Si cambian, actualiza `A2A_SERVIDORES` en `servicio-fastapi/.env`.
 
@@ -171,7 +189,11 @@ El script:
 1. crea `.venv` si no existe;
 2. instala `requirements.txt`;
 3. crea `.env` desde `.env.example` con una clave aleatoria si no existe;
-4. arranca `uvicorn` en `http://127.0.0.1:8000`.
+4. arranca `scripts/servidor.py`, que inicia uvicorn y, si `WHATSAPP_HABILITADO=true`, también el
+   puente Node de WhatsApp en `127.0.0.1:18081`.
+
+Sin WhatsApp habilitado, el supervisor se comporta igual que uvicorn: la API y la consola web no
+cambian. Si el puente no puede arrancar, la web sigue disponible y el panel informa `503`.
 
 La clave generada queda en `servicio-fastapi/.env`. Para verla:
 
@@ -230,6 +252,10 @@ Todas las rutas `/v1/*` requieren una clave válida en `X-API-Key` o en `Authori
 | `POST` | `/v1/consultas` | Consulta uno o varios agentes y devuelve la consolidación. |
 | `DELETE` | `/v1/sesiones/{session_id}` | Cierra la memoria A2A de una sesión. |
 | `POST` | `/telegram/webhook` | Webhook de Telegram; verifica el secreto y consulta el gateway A2A. |
+| `POST` | `/whatsapp/mensaje` | Entrada interna del puente Baileys; exige `X-WhatsApp-Secret`. |
+| `GET` | `/whatsapp` | Panel del operador para vincular y consultar el estado del canal. |
+| `GET` | `/whatsapp/estado`, `/whatsapp/codigo`, `/whatsapp/qr` | Estado y datos de vinculación (requieren `API_KEYS`). |
+| `POST` | `/whatsapp/conectar`, `/whatsapp/desconectar`, `/whatsapp/modo`, `/whatsapp/codigo` | Acciones de vinculación (requieren `API_KEYS`). |
 | `GET` | `/` | Consola web. |
 | `GET` | `/docs` | OpenAPI interactivo (si está habilitado). |
 
@@ -362,6 +388,76 @@ Cada chat conserva su sesión `telegram-<chat_id>` para la memoria A2A. Si `TELE
 el webhook responde `503` con un mensaje claro; no simula una respuesta exitosa. La respuesta se envía
 después de consultar a los agentes y se trunca a 4000 caracteres si excede el límite de Telegram.
 
+### 5.5 Canal WhatsApp
+
+El canal WhatsApp usa el **mismo orquestador A2A** que la consola y Telegram. Un puente Node
+(Baileys) se conecta a la cuenta del operador y reenvía solo los mensajes nuevos que esa cuenta se
+envía a sí misma en el chat **«Mensaje para ti»**. No lee historial, contactos ni grupos.
+
+```text
+WhatsApp del operador ⇄ Baileys (Node, 127.0.0.1:18081)
+                              │ POST /whatsapp/mensaje + X-WhatsApp-Secret
+                              ▼
+                        FastAPI + orquestador A2A
+```
+
+#### Requisitos y configuración
+
+Node 22+ y las dependencias del `package.json` de la raíz:
+
+```powershell
+npm ci --ignore-scripts
+```
+
+En `servicio-fastapi/.env`:
+
+```env
+WHATSAPP_HABILITADO=true
+WHATSAPP_SECRET=secreto_largo_generado_con_secrets
+WHATSAPP_URL_INTERNA=http://127.0.0.1:18081
+WHATSAPP_TIMEOUT=20
+WHATSAPP_MAX_CARACTERES=3500
+```
+
+Genera el secreto con:
+
+```powershell
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+#### Vincular la cuenta
+
+1. Arranca el servicio (`scripts\iniciar.ps1` o `python scripts/servidor.py`).
+2. Abre `http://127.0.0.1:8000/whatsapp` e introduce `API_KEYS` en **Clave del operador**.
+3. Pulsa **Iniciar vinculación**. Cuando WhatsApp habilite la solicitud, **Obtener código** se activa.
+4. Escribe tu número solo con código de país (7 a 15 dígitos, sin `+` ni espacios) y pulsa
+   **Obtener código**. El código se muestra una sola vez y vence en 120 segundos.
+5. En el celular: **WhatsApp → Dispositivos vinculados → Vincular un dispositivo → Vincular con
+   número de teléfono** e ingresa el código.
+6. Espera **Conectado** y envía un mensaje nuevo en **Mensaje para ti**.
+
+También puedes usar **Usar QR** antes de pedir código. No se cambia de modo automáticamente y no se
+solicita un segundo código tras un resultado incierto: revisa «Dispositivos vinculados», pulsa
+**Desconectar** y luego **Iniciar nuevo intento**.
+
+#### Comandos
+
+Los mismos de Telegram: `/ayuda`, `/agente_czz <consulta>`, `/agente <nombre> <consulta>`,
+`/paralelo agente_czz,agente_bryhan <consulta>` y `/colaborativo ...`.
+
+Cada celular conserva una sesión `wa_<hash>` derivada de su identidad; la conversación mantiene su
+`contextId` por agente. Las respuestas se recortan a `WHATSAPP_MAX_CARACTERES` (3500 por defecto).
+
+#### Límites
+
+- Baileys es un conector **no oficial**: puede infringir los términos de WhatsApp y exponer la cuenta
+  a bloqueos. Úsalo con un celular dedicado y bajo tu responsabilidad.
+- Un celular, una aplicación, un conector. No ejecutes dos copias con la misma cuenta.
+- En Heroku el disco es efímero: cada deploy o reinicio puede exigir nueva vinculación. Las
+  credenciales viven en `servicio-fastapi/whatsapp/.runtime/whatsapp-auth` (ignorado por Git).
+- La deduplicación de mensajes vive en RAM (2048 identificadores) y se pierde al reiniciar.
+- Solo se procesan mensajes de texto enviados por la propia cuenta a sí misma.
+
 ## 6. Seguridad
 
 El detalle está en [`SEGURIDAD.md`](SEGURIDAD.md). Resumen:
@@ -378,6 +474,9 @@ El detalle está en [`SEGURIDAD.md`](SEGURIDAD.md). Resumen:
 - Las URLs de agentes solo salen de `A2A_SERVIDORES`; el usuario no puede inyectar URLs.
 - Webhook Telegram protegido con `TELEGRAM_SECRET` en comparación de tiempo constante; el token solo
   vive en `.env`. Si falta, el webhook responde `503`; nunca simula éxito.
+- Canal WhatsApp: el puente escucha solo en `127.0.0.1:18081` y exige `WHATSAPP_SECRET`; el panel y
+  sus acciones exigen `API_KEYS`. No se registran códigos, números ni cuerpos de mensajes, y el
+  código de vinculación vive solo en RAM.
 - Errores claros: `401` acceso rechazado, `422` entrada inválida, `429` límite, `502` fallo de agentes,
   `503` sin agentes o Telegram no configurado, `504` timeout.
 
@@ -392,10 +491,22 @@ Ejecuta la suite desde `servicio-fastapi`, no desde la raíz: cada carpeta de ag
 suite y su propio entorno.
 
 La suite cubre autenticación, token inválido, rate limit, validación, selección, consolidación fiel,
-modos paralelo/colaborativo, sesión/memoria, errores de agente, timeout, frontend, cliente A2A JSON-RPC
-y webhook de Telegram (secreto, ayuda, auto, agente explícito y paralelo).
-Resultado de esta entrega: **52 pruebas aprobadas y 1 prueba de integración omitida** (la integración
+modos paralelo/colaborativo, sesión/memoria, errores de agente, timeout, frontend, cliente A2A JSON-RPC,
+webhook de Telegram (secreto, ayuda, auto, agente explícito y paralelo) y canal WhatsApp (secreto,
+ayuda, comandos, recorte y proxy del panel).
+Resultado de esta entrega: **64 pruebas aprobadas y 1 prueba de integración omitida** (la integración
 requiere servidores y claves reales).
+
+El puente Node tiene su propia suite, sin red ni credenciales:
+
+```powershell
+cd ..
+npm ci --ignore-scripts
+npm run whatsapp:test
+```
+
+Resultado: **8 pruebas aprobadas** (secreto del puente, ciclo de vida, modos, teléfono y guard de
+mensajes propios).
 
 Prueba de integración real (con agentes arriba y `API_KEYS` configurada):
 

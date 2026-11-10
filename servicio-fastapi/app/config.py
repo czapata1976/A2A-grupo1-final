@@ -88,6 +88,11 @@ class Settings:
     telegram_token: str = ""
     telegram_secret: str = ""
     telegram_api_base: str = "https://api.telegram.org"
+    whatsapp_habilitado: bool = False
+    whatsapp_secret: str = ""
+    whatsapp_url_interna: str = "http://127.0.0.1:18081"
+    whatsapp_timeout: float = 20.0
+    whatsapp_max_caracteres: int = 3500
     ruta_auditoria: str | None = "logs/auditoria.jsonl"
     nivel_log: str = "INFO"
     version: str = "1.0.0"
@@ -102,6 +107,7 @@ class Settings:
             "docs_habilitados": self.docs_habilitados,
             "auditoria": bool(self.ruta_auditoria),
             "telegram_configurado": bool(self.telegram_token and self.telegram_secret),
+            "whatsapp_configurado": bool(self.whatsapp_habilitado and self.whatsapp_secret),
         }
 
 
@@ -167,6 +173,29 @@ def cargar_settings(
     if telegram_api_base and not telegram_api_base.startswith(("http://", "https://")):
         raise ConfiguracionInvalida("TELEGRAM_API_BASE debe empezar con http:// o https://.")
 
+    whatsapp_habilitado = _booleano(os.environ.get("WHATSAPP_HABILITADO"), False)
+    whatsapp_secret = (os.environ.get("WHATSAPP_SECRET") or "").strip()
+    whatsapp_url_interna = (
+        os.environ.get("WHATSAPP_URL_INTERNA") or "http://127.0.0.1:18081"
+    ).strip().rstrip("/")
+    if whatsapp_habilitado:
+        if len(whatsapp_secret) < 16 or not whatsapp_secret.isascii():
+            raise ConfiguracionInvalida(
+                "WHATSAPP_SECRET debe tener al menos 16 caracteres ASCII cuando "
+                "WHATSAPP_HABILITADO=true."
+            )
+        partes_whatsapp = urlparse(whatsapp_url_interna)
+        if (
+            partes_whatsapp.scheme != "http"
+            or partes_whatsapp.hostname not in {"127.0.0.1", "localhost", "::1"}
+            or partes_whatsapp.query
+            or partes_whatsapp.fragment
+        ):
+            raise ConfiguracionInvalida(
+                "WHATSAPP_URL_INTERNA debe apuntar al puente local, por ejemplo "
+                "http://127.0.0.1:18081."
+            )
+
     nivel_log = (os.environ.get("LOG_LEVEL") or "INFO").upper()
     if nivel_log not in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
         raise ConfiguracionInvalida("LOG_LEVEL debe ser DEBUG, INFO, WARNING, ERROR o CRITICAL.")
@@ -189,6 +218,13 @@ def cargar_settings(
         telegram_token=telegram_token,
         telegram_secret=telegram_secret,
         telegram_api_base=telegram_api_base,
+        whatsapp_habilitado=whatsapp_habilitado,
+        whatsapp_secret=whatsapp_secret,
+        whatsapp_url_interna=whatsapp_url_interna,
+        whatsapp_timeout=_flotante(os.environ.get("WHATSAPP_TIMEOUT"), 20.0, minimo=1.0),
+        whatsapp_max_caracteres=_entero(
+            os.environ.get("WHATSAPP_MAX_CARACTERES"), 3500, minimo=200
+        ),
         docs_habilitados=_booleano(os.environ.get("DOCS_HABILITADOS"), True),
         confiar_en_proxy=_booleano(os.environ.get("CONFIAR_EN_PROXY"), False),
         ruta_auditoria=ruta_auditoria,

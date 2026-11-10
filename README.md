@@ -3,7 +3,7 @@
 **Curso:** Certificado Agentic AI · UAI
 **Taller:** Implementación y ejecución local
 **Grupo:** 1
-**Opción:** Servicio FastAPI protegido + consola web de chat + canal Telegram
+**Opción:** Servicio FastAPI protegido + consola web de chat + canales Telegram y WhatsApp
 **Estado:** implementación local reproducible, suite automatizada aprobada y descubrimiento/manejo de error A2A verificados contra `langgraph dev`; las capturas del recorrido real con modelos quedan pendientes de ejecución con las claves del grupo.
 
 
@@ -20,16 +20,18 @@ Se implementaron **dos opciones complementarias** de la consigna:
    una página estática: la consola habla con la API protegida y muestra la respuesta y la traza.
 3. **Canal Telegram** por webhook, usando el mismo orquestador A2A. Telegram no duplica agentes: solo
    es otro punto de entrada al gateway.
+4. **Canal WhatsApp** por medio de un puente Node/Baileys en loopback. El puente reenvía los mensajes
+   que la cuenta vinculada se envía a sí misma y el gateway responde con el mismo orquestador A2A.
 
-**Problema que resuelve.** Cualquier persona puede hacer una consulta desde el navegador o desde
-Telegram y recibir una respuesta de uno o varios agentes, con evidencia de quién respondió, cuánto
-tardó y qué contexto usó, sin exponer las claves de los modelos.
+**Problema que resuelve.** Cualquier persona puede hacer una consulta desde el navegador, desde
+Telegram o desde WhatsApp y recibir una respuesta de uno o varios agentes, con evidencia de quién
+respondió, cuánto tardó y qué contexto usó, sin exponer las claves de los modelos.
 
 **Qué reutiliza del Taller A2A.** Los cuatro agentes, sus prompts, herramientas, grafos y servidores:
 `agente_czz`, `agente_bryhan`, `agente_alejandra` y `agente_soluciones_comerciales_marketing`.
 
 **Qué agrega.** `servicio-fastapi/`: gateway, seguridad, orquestador, cliente JSON-RPC, consola web,
-pruebas, scripts y documentación.
+canal Telegram, canal WhatsApp (puente Baileys), pruebas, scripts y documentación.
 
 ## 2. Integrantes y aportes
 
@@ -43,8 +45,9 @@ pruebas, scripts y documentación.
 ## 3. Inicio rápido
 
 Requisitos: Python 3.12 y una clave de Gemini (`GOOGLE_API_KEY`) para los cuatro agentes. Para el
-canal Telegram se necesita un bot de BotFather (`TELEGRAM_TOKEN`) y un túnel HTTPS; no se requieren
-Gmail ni WhatsApp.
+canal Telegram se necesita un bot de BotFather (`TELEGRAM_TOKEN`) y un túnel HTTPS. El canal WhatsApp
+es opcional: requiere Node 22+, `WHATSAPP_HABILITADO=true` y un conector comunitario no oficial
+(Baileys).
 
 ```powershell
 # Terminal 1 · desde la raíz del taller
@@ -81,6 +84,14 @@ Para Telegram:
 El webhook usa el mismo orquestador A2A que la consola. Comandos: `/agente_czz <consulta>`,
 `/paralelo agente_czz,agente_bryhan <consulta>`, `/colaborativo ...` y `/ayuda`.
 
+Para WhatsApp (opcional):
+
+```powershell
+# En servicio-fastapi\.env: WHATSAPP_HABILITADO=true y WHATSAPP_SECRET=<secreto de 16+ caracteres>
+npm ci --ignore-scripts
+# Con el servicio arriba: http://127.0.0.1:8000/whatsapp
+```
+
 Detalle completo: [`servicio-fastapi/README.md`](servicio-fastapi/README.md).
 
 ## 4. Estructura de la entrega
@@ -89,8 +100,10 @@ Detalle completo: [`servicio-fastapi/README.md`](servicio-fastapi/README.md).
 grupo-1-taller-a2a/
 ├── README.md                 ← este archivo
 ├── documento-entrega.md      ← informe de la implementación
-├── servicio-fastapi/         ← API protegida + consola web + Telegram + pruebas
+├── package.json              ← dependencias del puente WhatsApp (Baileys)
+├── servicio-fastapi/         ← API protegida + consola web + Telegram + WhatsApp + pruebas
 │   ├── app/  tests/  scripts/  evidencias/
+│   ├── whatsapp/             ← puente Node/Baileys (loopback, solo texto)
 │   ├── .env.example  requirements.txt  requirements-lock.txt  requirements-evidencias.txt
 │   ├── Dockerfile  Procfile
 │   └── README.md  SEGURIDAD.md
@@ -106,9 +119,12 @@ grupo-1-taller-a2a/
 - El servicio exige `API_KEYS` en el servidor (`X-API-Key` o `Bearer`), aplica rate limit y no registra
   el texto de las consultas. Las claves de modelo viven solo en los `.env` de los agentes.
 - El webhook de Telegram exige `TELEGRAM_SECRET` y el token de BotFather vive solo en `.env`.
-- `.env.example` no contiene secretos; los `.env`, `.venv`, logs y cachés están excluidos.
-- Pruebas: `cd servicio-fastapi; .venv\Scripts\python.exe -m pytest -q` → **52 aprobadas, 1 omitida**
-  (la integración real requiere agentes y claves).
+- El puente de WhatsApp escucha solo en `127.0.0.1:18081` y exige `WHATSAPP_SECRET`; el panel exige la
+  clave del servicio y no se registran números, códigos ni cuerpos de mensajes.
+- `.env.example` no contiene secretos; los `.env`, `.venv`, `logs/`, `node_modules/` y
+  `whatsapp/.runtime/` están excluidos.
+- Pruebas: `cd servicio-fastapi; .venv\Scripts\python.exe -m pytest -q` → **64 aprobadas, 1 omitida**
+  (la integración real requiere agentes y claves). `npm run whatsapp:test` → **8 aprobadas**.
 - Evidencias: [`servicio-fastapi/evidencias/README.md`](servicio-fastapi/evidencias/README.md).
 - Seguridad detallada: [`servicio-fastapi/SEGURIDAD.md`](servicio-fastapi/SEGURIDAD.md).
 

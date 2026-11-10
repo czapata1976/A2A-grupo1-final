@@ -34,6 +34,7 @@ from app.orquestador import Orquestador
 from app.seguridad import ClienteAutenticado, LimitePeticiones, limitar
 from app.sesiones import AlmacenSesiones
 from app.telegram import router as telegram_router
+from app.whatsapp import router as whatsapp_router
 
 logger = logging.getLogger("servicio")
 DIRECTORIO_ESTATICO = Path(__file__).resolve().parent / "static"
@@ -150,7 +151,12 @@ def crear_app(
                 "img-src 'self' data:; font-src 'self'; connect-src 'self'; "
                 "frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
             )
-        if ruta == "/" or ruta.startswith("/v1/") or ruta == "/salud":
+        if (
+            ruta == "/"
+            or ruta.startswith("/v1/")
+            or ruta.startswith("/whatsapp")
+            or ruta == "/salud"
+        ):
             response.headers["Cache-Control"] = "no-store"
         elif ruta.startswith("/static/"):
             response.headers["Cache-Control"] = "public, max-age=3600"
@@ -303,6 +309,7 @@ def crear_app(
         return ReinicioSalida(session_id=session_id, estado="reiniciada")
 
     app.include_router(telegram_router)
+    app.include_router(whatsapp_router)
 
     app.mount("/static", StaticFiles(directory=DIRECTORIO_ESTATICO), name="static")
     return app
