@@ -92,6 +92,7 @@ def main() -> int:
             factory=True,
             host=direccion,
             port=puerto_publico,
+            workers=1,
             access_log=False,
             log_config=None,
             server_header=False,
