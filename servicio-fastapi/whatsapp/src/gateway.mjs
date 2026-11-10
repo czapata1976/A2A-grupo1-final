@@ -122,10 +122,12 @@ export class Gateway {
                 // registrar el dispositivo. Hay que reconectar aunque `registered` aún no se haya
                 // persistido; de lo contrario la vinculación se pierde y el teléfono muestra error.
                 // WhatsApp puede pedir más de un reinicio seguido, por eso se cuentan hasta 3.
+                // 500 y 503 son caídas transitorias del servidor: también se reintentan.
                 const safe =
                     code === 515
                         ? this.pairingRestarts < 3
-                        : [405, 408].includes(code) && (!this.pairing.attempted || this.everConnected);
+                        : [405, 408, 500, 503].includes(code) &&
+                          (!this.pairing.attempted || this.everConnected);
                 this.ready = null;
                 this.qr = null;
                 this.pairing.stop();

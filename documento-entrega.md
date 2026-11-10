@@ -286,6 +286,8 @@ Notas de operación:
   `A2A_SERVIDORES` en Heroku con `--heroku a2agrupo1`. Las URLs de túnel rápido cambian al reiniciar.
 - El canal WhatsApp procesa los mensajes **enviados desde la propia cuenta** (chat «Mensaje para ti»).
   WhatsApp entrega esos mensajes como `append` y el puente acepta `notify` y `append`.
+- El puente reconecta solo tras cierres `515` (reinicio de WhatsApp) y `500`/`503` (caídas
+  transitorias del servidor), sin pedir un nuevo código.
 - El log del servicio rota cada 2 MB con 3 copias (`logs/servicio.log`) y no registra el sondeo del panel.
 - La consola muestra **5 ejemplos predefinidos** que preseleccionan agente y modo; el ejemplo
   «Consulta multiagente» quedó corregido ortográficamente.
